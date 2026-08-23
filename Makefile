@@ -17,10 +17,6 @@ help:
 	@echo make clean    - Remove generated simulation files and folders
 	@echo make help     - Show this help message
 
-
-
-
-
 # Run simulation 
 clkdiv:
 	vsim -do sim/clkdiv.tcl
@@ -28,16 +24,17 @@ clkdiv:
 clkdiv_cli:
 	vsim -c -do "do sim/clkdiv.tcl; quit -f"
 
+bin2bcd_14bits_cli:
+	vsim -c -do "do sim/bin2bcd_14bits.tcl; quit -f"
 
+bin2bcd_14bits:
+	vsim -do sim/bin2bcd_14bits.tcl
 
+display_cli:
+	vsim -c -do "do sim/display.tcl; quit -f"
 
-
-
-
-
-
-
-
+display:
+	vsim -do sim/display.tcl
 
 
 # Clean up compilation database and temporary simulator outputs
