@@ -103,12 +103,10 @@ module tb_display;
         adj_en = 1;
         adj_target = 2'b11;
         
-        // When clk_2Hz is 1, the adjusted digits should blink (blank out -> show B)
         clk_2Hz = 1;
         #10;
         render_display();
         
-        // When clk_2Hz is 0, the digits should display normally
         clk_2Hz = 0;
         #10;
         render_display();

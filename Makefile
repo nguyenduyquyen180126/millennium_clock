@@ -36,6 +36,9 @@ display_cli:
 display:
 	vsim -do sim/display.tcl
 
+millennium_clock_cli:
+	vsim -c -do "do sim/millennium_clock.tcl; quit -f"
+
 
 # Clean up compilation database and temporary simulator outputs
 clean:

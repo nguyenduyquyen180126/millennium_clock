@@ -23,7 +23,7 @@ module clkdiv #(
             tick_1Hz <= clk_2Hz;
         end
         else begin
-            cnt <= cnt + 1;
+            cnt <= cnt + 1'b1;
             clk_2Hz <= clk_2Hz;
             tick_1Hz <= 0;
         end

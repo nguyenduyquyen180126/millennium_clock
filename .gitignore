@@ -13,3 +13,39 @@ wlft*
 # Operating System specific files
 .DS_Store
 Thumbs.db
+
+# Intel Quartus Prime generated files and directories
+db/
+incremental_db/
+output_files/
+simulation/
+timing/
+.qsys_edit/
+greybox_tmp/
+hc_output/
+hps_isw_shared/
+
+# Quartus compilation output and temporary files
+*.bak
+*.cmp
+*.done
+*.eqn
+*.jdi
+*.pin
+*.pof
+*.qws
+*.qar
+*.qarlog
+*.qdf
+*.qms
+*.qtf
+*.rpt
+*.smsg
+*.sof
+*.summary
+*.spd
+*.ipinfo
+*.sopcinfo
+*.xml
+PLLJ_PLLSPE_INFO.txt
+

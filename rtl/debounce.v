@@ -8,7 +8,6 @@ module debouncer #(
     output reg button_out     // Debounced button output
 );
 
-
     localparam COUNTER_MAX = (CLK_FREQ / 1000) * DEBOUNCE_TIME_MS;
     localparam COUNTER_WIDTH = $clog2(COUNTER_MAX + 1);
 
@@ -38,7 +37,7 @@ module debouncer #(
                     counter <= 0;
                 end
                 else begin
-                    counter <= counter + 1;
+                    counter <= counter + 1'b1;
                 end
             end 
             else begin
