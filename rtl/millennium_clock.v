@@ -30,7 +30,7 @@ module millennium_clock #(
     ) u_up_debounce (
         .clk(clk),
         .rst_n(rst_n),
-        .button_in(~up_btn),
+        .button_in(up_btn),
         .button_out(up)
     );
 
@@ -40,9 +40,53 @@ module millennium_clock #(
     ) u_down_debounce (
         .clk(clk),
         .rst_n(rst_n),
-        .button_in(~down_btn),
+        .button_in(down_btn),
         .button_out(down)
     );
+
+    wire up_pulse;
+    wire down_pulse;
+    button_auto_repeat #(
+        .CLK_FREQ(CLK_FREQ),
+        .HOLD_DELAY_MS(500),
+        .REPEAT_RATE_MS(200)
+    ) u_up_auto_repeat (
+        .clk(clk),
+        .rst_n(rst_n),
+        .btn_clean(up),
+        .pulse_out(up_pulse)
+    );
+
+    button_auto_repeat #(
+        .CLK_FREQ(CLK_FREQ),
+        .HOLD_DELAY_MS(500),
+        .REPEAT_RATE_MS(200)
+    ) u_down_auto_repeat (
+        .clk(clk),
+        .rst_n(rst_n),
+        .btn_clean(down),
+        .pulse_out(down_pulse)
+    );
+
+    // Tạm bỏ
+    // // Create one-clock pulses for manual adjustment events.
+    // reg up_q;
+    // reg down_q;
+    // wire up_pulse;
+    // wire down_pulse;
+
+    // always @(posedge clk or negedge rst_n) begin
+    //     if (!rst_n) begin
+    //         up_q <= 1'b0;
+    //         down_q <= 1'b0;
+    //     end else begin
+    //         up_q <= up;
+    //         down_q <= down;
+    //     end
+    // end
+
+    // assign up_pulse = up & ~up_q;
+    // assign down_pulse = down & ~down_q;
 
     wire [4:0] hour_raw;
     wire [5:0] hour;
@@ -53,26 +97,6 @@ module millennium_clock #(
     wire [13:0] year;
 
     assign hour = {1'b0, hour_raw};
-
-   
-    // Create one-clock pulses for manual adjustment events.
-    reg up_q;
-    reg down_q;
-    wire up_pulse;
-    wire down_pulse;
-
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            up_q <= 1'b0;
-            down_q <= 1'b0;
-        end else begin
-            up_q <= up;
-            down_q <= down;
-        end
-    end
-
-    assign up_pulse = up & ~up_q;
-    assign down_pulse = down & ~down_q;
 
     clock_block u_clock_block(
         .clk(clk),

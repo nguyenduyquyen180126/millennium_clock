@@ -31,7 +31,7 @@ module clock_block(
     wire month_carry_unused;
     wire leap;
     wire [4:0] dim;
-
+    
     wire run_auto = (~adj_en) & tick_1Hz;
 
     assign inc_second_auto = run_auto;
