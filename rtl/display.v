@@ -13,14 +13,16 @@ module display(
     output [13:0] led_mimi_momo,
     output [27:0] led_ss_yyyy
 );
-    wire blink_hh_dd, blink_mimi_momo, blink_ss_yyyy;
+    wire blink_hh_dd, blink_mimi_momo, blink_ss_yyyy, off_yy__;
     display_ctrl u_dis_ctrl(
         .clk_2Hz(clk_2Hz), 
         .adj_target(adj_target),
         .adj_en(adj_en),
+        .mode(mode),
         .blink_hh_dd(blink_hh_dd),
         .blink_mimi_momo(blink_mimi_momo),
-        .blink_ss_yyyy(blink_ss_yyyy)
+        .blink_ss_yyyy(blink_ss_yyyy),
+        .off_yy__(off_yy__)
     );
 
     wire [5:0] hh_dd_src;
@@ -70,12 +72,12 @@ module display(
     // ss_yyyy_bcd[7:4]   -> Tens digit
     // ss_yyyy_bcd[3:0]   -> Units digit
     seven_seg_decoder u_ss_yyyy_thousands(
-        .blink(blink_ss_yyyy),
+        .blink(off_yy__),
         .hex_code(ss_yyyy_bcd[15:12]),
         .seg_data(led_ss_yyyy[27:21])
     );
     seven_seg_decoder u_ss_yyyy_hundreds(
-        .blink(blink_ss_yyyy),
+        .blink(off_yy__),
         .hex_code(ss_yyyy_bcd[11:8]),
         .seg_data(led_ss_yyyy[20:14])
     );

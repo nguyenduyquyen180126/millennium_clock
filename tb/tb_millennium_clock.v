@@ -51,7 +51,7 @@ module tb_millennium_clock;
             7'b1111000: seg2number = 4'h7;
             7'b0000000: seg2number = 4'h8;
             7'b0010000: seg2number = 4'h9;
-            default:    seg2number = 4'hF; // Blank / Unknown
+            default:    seg2number = 4'hB; // Blank / Unknown
         endcase
     endfunction
 
