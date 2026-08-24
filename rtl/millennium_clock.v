@@ -74,7 +74,7 @@ module millennium_clock #(
     assign up_pulse = up & ~up_q;
     assign down_pulse = down & ~down_q;
 
-    century_clock u_century_clock(
+    clock_block u_clock_block(
         .clk(clk),
         .up_btn(up_pulse),
         .down_btn(down_pulse),

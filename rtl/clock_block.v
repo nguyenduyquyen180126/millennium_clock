@@ -1,4 +1,4 @@
-module century_clock(
+module clock_block(
     input clk,
     input up_btn,
     input down_btn,
@@ -42,7 +42,7 @@ module century_clock(
     assign inc_year_auto   = run_auto && (value_second == 6'd59) && (value_minute == 6'd59) && (value_hour == 5'd23) && (value_day == dim) && (value_month == 4'd12);
 
     // Decoder cấu hình thủ công cho Giờ/Phút/Giây (mode = 0 hoặc 1 tùy thiết kế)
-    decoder #(.target(2'b00)) u_decoder_second(
+    decoder #(.target(2'b01)) u_decoder_second(
         .adj_en(adj_en),
         .mode(mode),
         .up_btn(up_btn),
@@ -52,7 +52,7 @@ module century_clock(
         .dec_manual(dec_second_manual)
     );
 
-    decoder #(.target(2'b01)) u_decoder_minute(
+    decoder #(.target(2'b10)) u_decoder_minute(
         .adj_en(adj_en),
         .mode(mode),
         .up_btn(up_btn),
@@ -62,7 +62,7 @@ module century_clock(
         .dec_manual(dec_minute_manual)
     );
 
-    decoder #(.target(2'b10)) u_decoder_hour(
+    decoder #(.target(2'b11)) u_decoder_hour(
         .adj_en(adj_en),
         .mode(mode),
         .up_btn(up_btn),
@@ -73,7 +73,7 @@ module century_clock(
     );
 
     // Decoder cấu hình thủ công cho Ngày/Tháng/Năm (~mode)
-    decoder #(.target(2'b00)) u_decoder_day(
+    decoder #(.target(2'b11)) u_decoder_day(
         .adj_en(adj_en),
         .mode(~mode),
         .up_btn(up_btn),
@@ -83,7 +83,7 @@ module century_clock(
         .dec_manual(dec_day_manual)
     );
 
-    decoder #(.target(2'b01)) u_decoder_month(
+    decoder #(.target(2'b10)) u_decoder_month(
         .adj_en(adj_en),
         .mode(~mode),
         .up_btn(up_btn),
@@ -93,7 +93,7 @@ module century_clock(
         .dec_manual(dec_month_manual)
     );
 
-    decoder #(.target(2'b10)) u_decoder_year(
+    decoder #(.target(2'b01)) u_decoder_year(
         .adj_en(adj_en),
         .mode(~mode),
         .up_btn(up_btn),
