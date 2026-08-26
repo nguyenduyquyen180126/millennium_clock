@@ -3,7 +3,7 @@ module display(
     input [1:0] adj_target,
     input adj_en,
     input mode,
-    input [5:0] hour,
+    input [4:0] hour,
     input [4:0] day,
     input [5:0] min,
     input [3:0] month,
@@ -25,16 +25,16 @@ module display(
         .off_yy__(off_yy__)
     );
 
-    wire [5:0] hh_dd_src;
+    wire [4:0] hh_dd_src;
     wire [5:0] mimi_momo_src;
     wire [13:0] ss_yyyy_src;
-    assign hh_dd_src = (mode) ? {1'b0, day} : hour;
+    assign hh_dd_src = (mode) ? day : hour;
     assign mimi_momo_src = (mode) ? {2'b0, month} : min;
     assign ss_yyyy_src = (mode) ? year : {8'b0, sec[5:0]};
 
     wire [7:0] hh_dd_bcd, mimi_momo_bcd;
     wire [15:0] ss_yyyy_bcd;
-    bin2bcd_6bits u_hh_dd_bin2bcd(.binary(hh_dd_src), .bcd(hh_dd_bcd));
+    bin2bcd_5bits u_hh_dd_bin2bcd(.binary(hh_dd_src), .bcd(hh_dd_bcd));
     bin2bcd_6bits u_mimi_momo_bin2bcd(.binary(mimi_momo_src), .bcd(mimi_momo_bcd));
     bin2bcd_14bits u_ss_yyyy_bin2bcd(.bin(ss_yyyy_src), .bcd(ss_yyyy_bcd));
 

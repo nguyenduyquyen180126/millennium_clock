@@ -68,35 +68,12 @@ module millennium_clock #(
         .pulse_out(down_pulse)
     );
 
-    // Tạm bỏ
-    // // Create one-clock pulses for manual adjustment events.
-    // reg up_q;
-    // reg down_q;
-    // wire up_pulse;
-    // wire down_pulse;
-
-    // always @(posedge clk or negedge rst_n) begin
-    //     if (!rst_n) begin
-    //         up_q <= 1'b0;
-    //         down_q <= 1'b0;
-    //     end else begin
-    //         up_q <= up;
-    //         down_q <= down;
-    //     end
-    // end
-
-    // assign up_pulse = up & ~up_q;
-    // assign down_pulse = down & ~down_q;
-
-    wire [4:0] hour_raw;
-    wire [5:0] hour;
+    wire [4:0] hour;
     wire [4:0] day;
     wire [5:0] min;
     wire [3:0] month;
     wire [5:0] sec;
     wire [13:0] year;
-
-    assign hour = {1'b0, hour_raw};
 
     clock_block u_clock_block(
         .clk(clk),
@@ -109,7 +86,7 @@ module millennium_clock #(
         .tick_1Hz(tick_1Hz),
         .value_second(sec),
         .value_minute(min),
-        .value_hour(hour_raw),
+        .value_hour(hour),
         .value_day(day),
         .value_month(month),
         .value_year(year)
