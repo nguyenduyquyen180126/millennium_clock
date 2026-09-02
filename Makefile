@@ -42,6 +42,9 @@ millennium_clock_cli:
 button_auto_repeat_cli:
 	vsim -c -do "do sim/button_auto_repeat.tcl; quit -f"
 
+sim_cli:
+	vsim -c -do "do sim/millennium_clock.tcl; quit -f"
+
 # Clean up compilation database and temporary simulator outputs
 clean:
 	@echo Cleaning simulation artifacts...

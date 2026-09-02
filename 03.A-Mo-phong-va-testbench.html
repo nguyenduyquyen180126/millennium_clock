@@ -1,0 +1,3130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buổi 3 — Mô phỏng và testbench | ET4030 HUST</title>
+<style>
+:root{
+  --bg:#F7F6F3; --surface:#FFFFFF; --surface2:#F1EFEA; --line:#DAD5CC;
+  --ink:#191C22; --ink2:#3D4551; --muted:#6B7280;
+  --acc:#1F4E9C; --acc-soft:#E4ECF9;
+  --teal:#0E7C6B; --teal-soft:#DDF0EC;
+  --violet:#6D28D9; --violet-soft:#EDE6FB;
+  --amber:#B45309; --amber-soft:#FBEFDC;
+  --red:#B3261E; --red-soft:#FAE3E1;
+  --green:#15803D; --green-soft:#DFF1E5;
+  --pink:#A21C6B;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --shadow:0 1px 2px rgba(20,25,35,.06),0 8px 24px rgba(20,25,35,.07);
+}
+html[data-theme="dark"]{
+  --bg:#12151B; --surface:#1A1F27; --surface2:#232932; --line:#333B47;
+  --ink:#EDEFF3; --ink2:#C3C9D4; --muted:#8E97A6;
+  --acc:#6EA8FE; --acc-soft:#1D2C46;
+  --teal:#43C9B0; --teal-soft:#12332E;
+  --violet:#B191F5; --violet-soft:#2A2140;
+  --amber:#F0A64A; --amber-soft:#3A2A14;
+  --red:#F0796F; --red-soft:#3B1E1C;
+  --green:#5CCB84; --green-soft:#173225;
+  --pink:#EC7BB6;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+/* ---------- stage ---------- */
+#stage{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
+#deck{position:relative;width:1280px;height:720px;transform-origin:center center}
+.slide{
+  position:absolute;inset:0;width:1280px;height:720px;background:var(--surface);
+  padding:44px 56px 56px;display:none;flex-direction:column;
+  border-radius:14px;box-shadow:var(--shadow);overflow:hidden;
+}
+.slide.active{display:flex}
+.slide::after{
+  content:"";position:absolute;left:0;right:0;top:0;height:5px;
+  background:linear-gradient(90deg,var(--acc),var(--teal) 45%,var(--violet));
+}
+/* ---------- typography ---------- */
+h1.title{font-size:52px;line-height:1.1;font-weight:800;letter-spacing:-.02em}
+h2{font-size:31px;line-height:1.18;font-weight:750;letter-spacing:-.015em;color:var(--ink)}
+h3{font-size:18px;font-weight:700;color:var(--acc);margin-bottom:6px}
+p,li{font-size:16.5px;line-height:1.55;color:var(--ink2)}
+.lead{font-size:18px;line-height:1.55;color:var(--ink2)}
+.sub{font-size:14.5px;color:var(--muted);line-height:1.5}
+.eyebrow{font-size:12.5px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;color:var(--acc)}
+strong{color:var(--ink);font-weight:700}
+code,.mono{font-family:var(--mono);font-size:.93em}
+.k{font-family:var(--mono);background:var(--surface2);border:1px solid var(--line);
+   border-radius:5px;padding:1px 6px;font-size:.88em;color:var(--ink);white-space:nowrap}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
+    padding-bottom:12px;border-bottom:2px solid var(--line);margin-bottom:18px;flex:0 0 auto}
+.hd .tag{flex:0 0 auto;font-size:11.5px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;
+   color:var(--acc);background:var(--acc-soft);border-radius:999px;padding:6px 13px;white-space:nowrap}
+.body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:14px}
+/* ---------- layout helpers ---------- */
+.row{display:flex;gap:16px}
+.body.row{flex-direction:row}
+.col{display:flex;flex-direction:column;gap:12px;min-height:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g2a{display:grid;grid-template-columns:1.25fr 1fr;gap:18px}
+.g2b{display:grid;grid-template-columns:1fr 1.35fr;gap:18px}
+.grow{flex:1 1 auto;min-height:0}
+.center{align-items:center;justify-content:center}
+/* ---------- cards ---------- */
+.card{background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:14px 16px}
+.card.plain{background:transparent}
+.card h4{font-size:15px;font-weight:750;color:var(--ink);margin-bottom:7px;display:flex;
+   align-items:center;gap:8px}
+.card .n{width:21px;height:21px;border-radius:6px;background:var(--acc);color:#fff;
+   font-size:12px;display:grid;place-items:center;font-weight:750;flex:0 0 auto}
+.card.acc{background:var(--acc-soft);border-color:transparent}
+.card.teal{background:var(--teal-soft);border-color:transparent}
+.card.violet{background:var(--violet-soft);border-color:transparent}
+.card.amber{background:var(--amber-soft);border-color:transparent}
+.card.red{background:var(--red-soft);border-color:transparent}
+.card.green{background:var(--green-soft);border-color:transparent}
+.callout{border-left:4px solid var(--amber);background:var(--amber-soft);
+   border-radius:0 9px 9px 0;padding:11px 15px}
+.callout.key{border-left-color:var(--acc);background:var(--acc-soft)}
+.callout.warn{border-left-color:var(--red);background:var(--red-soft)}
+.callout .lbl{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+   color:var(--amber);margin-bottom:3px}
+.callout.key .lbl{color:var(--acc)} .callout.warn .lbl{color:var(--red)}
+ul.tick{list-style:none;display:flex;flex-direction:column;gap:7px}
+ul.tick li{position:relative;padding-left:21px}
+ul.tick li::before{content:"";position:absolute;left:3px;top:9px;width:7px;height:7px;
+   border-radius:2px;background:var(--acc)}
+ol.num{padding-left:20px;display:flex;flex-direction:column;gap:6px}
+/* ---------- formula ---------- */
+.formula{font-family:var(--mono);background:var(--surface);border:1.5px solid var(--acc);
+  border-radius:10px;padding:12px 16px;font-size:16px;color:var(--ink);text-align:center;
+  line-height:1.7;letter-spacing:-.01em}
+.formula.big{font-size:20px;padding:16px 18px}
+.formula em{font-style:normal;color:var(--acc);font-weight:700}
+.formula .op{color:var(--muted)}
+/* ---------- tables ---------- */
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;color:var(--ink2)}
+th{background:var(--surface2);font-weight:700;color:var(--ink);font-size:13px}
+td.mono,th.mono{font-family:var(--mono);font-size:13px}
+table.tt td,table.tt th{text-align:center;padding:4px 7px;font-family:var(--mono);font-size:13.5px}
+tr.hl td{background:var(--acc-soft);color:var(--ink);font-weight:600}
+/* ---------- controls ---------- */
+.ctrl{display:flex;flex-direction:column;gap:9px}
+.slider{display:grid;grid-template-columns:112px 1fr 74px;align-items:center;gap:10px}
+.slider label{font-size:13.5px;font-family:var(--mono);color:var(--ink2);font-weight:600}
+.slider output{font-size:13.5px;font-family:var(--mono);color:var(--acc);font-weight:700;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;height:5px;border-radius:3px;
+  background:var(--line);outline:none;width:100%}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+  border-radius:50%;background:var(--acc);cursor:pointer;border:2.5px solid var(--surface);
+  box-shadow:0 1px 4px rgba(0,0,0,.25)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--acc);
+  cursor:pointer;border:2.5px solid var(--surface)}
+button.btn{font-family:var(--sans);font-size:13.5px;font-weight:650;padding:7px 14px;border-radius:8px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;
+  transition:all .12s}
+button.btn:hover{background:var(--surface2);border-color:var(--acc)}
+button.btn.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+button.btn.pri:hover{filter:brightness(1.1)}
+button.btn.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+button.btn:disabled{opacity:.4;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.seg button{border:none;border-radius:0;background:transparent;padding:7px 13px;font-size:13px;
+  font-weight:650;cursor:pointer;color:var(--ink2);font-family:var(--sans)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--acc);color:#fff}
+input[type=text],input[type=number],select{font-family:var(--mono);font-size:14px;padding:6px 9px;
+  border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink)}
+/* ---------- badges ---------- */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:750;
+  padding:4px 11px;border-radius:999px;letter-spacing:.02em}
+.badge.pass{background:var(--green-soft);color:var(--green)}
+.badge.fail{background:var(--red-soft);color:var(--red)}
+.badge.warn{background:var(--amber-soft);color:var(--amber)}
+.badge.info{background:var(--acc-soft);color:var(--acc)}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 13px;
+  display:flex;flex-direction:column;gap:2px}
+.stat .v{font-family:var(--mono);font-size:22px;font-weight:750;color:var(--acc);line-height:1.1}
+.stat .l{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.03em}
+.stat.ok .v{color:var(--green)} .stat.bad .v{color:var(--red)} .stat.am .v{color:var(--amber)}
+/* ---------- svg ---------- */
+svg{display:block;max-width:100%}
+.card svg{max-height:344px;margin:0 auto}
+pre.vlog{font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--ink2);
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:10px 13px;overflow:auto;white-space:pre;tab-size:2}
+pre.vlog .kw{color:var(--violet);font-weight:700}
+pre.vlog .ty{color:var(--teal);font-weight:700}
+pre.vlog .nu{color:var(--amber)}
+pre.vlog .cm{color:var(--muted);font-style:italic}
+pre.vlog .hl{background:var(--amber-soft);border-radius:3px;padding:0 2px}
+pre.vlog .bad{background:var(--red-soft);border-radius:3px;padding:0 2px}
+pre.vlog .ok{background:var(--green-soft);border-radius:3px;padding:0 2px}
+sup.cite{font-family:var(--mono);font-size:.62em;font-weight:750;color:var(--acc);
+  vertical-align:super;letter-spacing:0;padding-left:1px}
+.assum{font-family:var(--mono);font-size:10.5px;font-weight:750;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--amber);background:var(--amber-soft);
+  border:1px solid var(--amber);border-radius:5px;padding:1px 6px;white-space:nowrap}
+.assum.model{color:var(--red);background:var(--red-soft);border-color:var(--red)}
+.assum.src{color:var(--green);background:var(--green-soft);border-color:var(--green)}
+svg text:not([fill]){font-family:var(--mono);fill:var(--ink2)}
+svg text[fill]{font-family:var(--mono)}
+svg .lbl:not([fill]){font-family:var(--sans);font-weight:650;fill:var(--ink)}
+svg .lbl[fill]{font-family:var(--sans);font-weight:650}
+.wf-bg{fill:var(--surface)}
+.wf-grid{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}
+.wf-axis{stroke:var(--line);stroke-width:1.5}
+.wf-sig{fill:none;stroke:var(--acc);stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
+.wf-clk{fill:none;stroke:var(--ink2);stroke-width:2.2;stroke-linejoin:round}
+.wf-name{font-family:var(--mono);font-size:13px;font-weight:700;fill:var(--ink)}
+/* ---------- chrome ---------- */
+#bar{position:fixed;left:0;bottom:0;height:3px;background:var(--acc);z-index:60;
+  transition:width .25s cubic-bezier(.4,0,.2,1);border-radius:0 2px 2px 0}
+#chrome{position:fixed;right:14px;bottom:12px;display:flex;align-items:center;gap:7px;z-index:61}
+#chrome button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink2);cursor:pointer;font-size:15px;display:grid;
+  place-items:center;box-shadow:var(--shadow);font-family:var(--sans)}
+#chrome button:hover{color:var(--acc);border-color:var(--acc)}
+#counter{font-family:var(--mono);font-size:12.5px;color:var(--muted);background:var(--surface);
+  border:1px solid var(--line);border-radius:9px;padding:8px 11px;box-shadow:var(--shadow)}
+#crumb{position:fixed;left:14px;bottom:12px;z-index:61;font-size:12px;color:var(--muted);
+  background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 12px;
+  box-shadow:var(--shadow);max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---------- overview ---------- */
+#ov{position:fixed;inset:0;background:var(--bg);z-index:80;display:none;overflow-y:auto;padding:26px}
+#ov.on{display:block}
+#ov h3{font-size:20px;color:var(--ink);margin-bottom:4px}
+#ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:16px}
+.ovc{background:var(--surface);border:1.5px solid var(--line);border-radius:9px;padding:11px 12px;
+  cursor:pointer;transition:all .12s;min-height:74px;display:flex;flex-direction:column;gap:5px}
+.ovc:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:var(--shadow)}
+.ovc .num{font-family:var(--mono);font-size:11px;color:var(--acc);font-weight:750}
+.ovc .t{font-size:13px;font-weight:650;color:var(--ink);line-height:1.3}
+.ovc .s{font-size:11px;color:var(--muted)}
+.ovsec{grid-column:1/-1;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--acc);margin-top:10px;padding-bottom:5px;border-bottom:1.5px solid var(--line)}
+/* ---------- misc ---------- */
+.kbd{font-family:var(--mono);font-size:11.5px;background:var(--surface2);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:2px 6px;color:var(--ink2)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:12.5px;color:var(--ink2);align-items:center}
+.legend i{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:5px;
+  vertical-align:-2px}
+.scroll{overflow-y:auto;min-height:0}
+.scroll::-webkit-scrollbar{width:7px} .scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.hint{font-size:12px;color:var(--muted);font-style:italic}
+@media print{
+  body{overflow:visible} #stage{position:static;display:block}
+  #deck{transform:none!important;width:auto;height:auto}
+  .slide{display:flex!important;position:relative;page-break-after:always;box-shadow:none;
+    margin:0 auto 8mm;border:1px solid #ccc}
+  #chrome,#bar,#crumb,#ov{display:none!important}
+}
+</style>
+</head>
+<body>
+<div id="stage"><div id="deck">
+<!-- ══════════════ 1. BÌA ══════════════ -->
+<section class="slide" data-sec="Mở đầu" data-title="Trang bìa">
+  <div class="body center" style="gap:20px;text-align:center">
+    <div class="eyebrow">Trường Điện – Điện tử · Đại học Bách khoa Hà Nội</div>
+    <h1 class="title" style="max-width:1040px">MÔ PHỎNG<br>VÀ TESTBENCH</h1>
+    <div style="width:120px;height:4px;background:linear-gradient(90deg,var(--acc),var(--violet));border-radius:2px"></div>
+    <p class="lead" style="max-width:880px">
+      Chương trình mô phỏng hoạt động theo nguyên lý nào, thời gian mô phỏng được mô hình hoá ra sao,
+      và một testbench đầy đủ gồm những thành phần gì. Kết thúc bằng các cấu trúc ngôn ngữ chỉ dùng được
+      trong testbench: vòng lặp, <span class="k">fork/join</span>, vào ra tệp và <span class="k">force/release</span>.
+    </p>
+    <div class="card plain" style="margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:12px 18px">
+      <div class="sub">
+        Điều hướng: <span class="kbd">←</span> <span class="kbd">→</span> chuyển slide ·
+        <span class="kbd">O</span> mục lục · <span class="kbd">D</span> nền tối ·
+        <span class="kbd">F</span> toàn màn hình · <span class="kbd">P</span> in ra PDF
+      </div>
+    </div>
+    <p class="sub" style="margin-top:8px">Biên soạn: PGS.TS. Nguyễn Đức Minh · Học phần ET4030 — Thiết kế, tổng hợp IC số và hệ thống số</p>
+  </div>
+</section>
+
+<!-- ══════════════ 2. BẢN ĐỒ BUỔI HỌC ══════════════ -->
+<section class="slide" data-sec="Mở đầu" data-title="Bản đồ buổi học" data-int="1">
+  <div class="hd"><div><div class="eyebrow">Định hướng</div><h2>Bốn phần nội dung của buổi học</h2></div>
+    <span class="tag">Tổng quan</span></div>
+  <div class="body">
+    <p class="lead">Buổi học trả lời bốn câu hỏi theo thứ tự: chương trình mô phỏng tính toán như thế nào,
+      thời gian trong mô phỏng nghĩa là gì, một testbench gồm những phần nào, và những cấu trúc ngôn ngữ nào
+      chỉ hợp lệ trong testbench.</p>
+    <div class="row" id="rmTags" style="gap:8px;flex-wrap:wrap;margin:10px 0 6px"></div>
+    <svg id="rmSvg" viewBox="0 0 1180 150" style="width:100%;height:auto"></svg>
+    <div id="rmDetail" style="margin-top:10px"></div>
+  </div>
+</section>
+
+<!-- ══════════════ 3. ĐỊNH NGHĨA MÔ PHỎNG ══════════════ -->
+<section class="slide" data-sec="Nguyên lý mô phỏng" data-title="Mô phỏng là gì">
+  <div class="hd"><div><div class="eyebrow">4.1.1 · Định nghĩa</div><h2>Mô phỏng: tính giá trị đầu ra từ mô hình mô tả mạch</h2></div>
+    <span class="tag">Nguyên lý</span></div>
+  <div class="body g2b">
+    <div class="col">
+      <p>Mô phỏng là quá trình phân tích mô hình mô tả mạch để tính toán giá trị đầu ra tương ứng với một chuỗi
+        giá trị đầu vào cho trước. Quá trình này có thể thực hiện bằng bộ não con người trên giấy, hoặc bằng
+        máy tính trên mô tả HDL — bản chất là như nhau, chỉ khác quy mô.</p>
+      <div class="card acc"><h4>Mô phỏng trả lời được câu hỏi nào</h4>
+        <ul class="tick">
+          <li>Mạch có cho ra giá trị đúng với một chuỗi đầu vào cụ thể hay không.</li>
+          <li>Tín hiệu nào đổi giá trị ở thời điểm nào, theo thứ tự nào.</li>
+          <li>Có trạng thái nào không mong muốn xuất hiện trong quá trình chuyển tiếp hay không.</li>
+        </ul>
+      </div>
+      <div class="card red"><h4>Mô phỏng không trả lời được câu hỏi nào</h4>
+        <ul class="tick">
+          <li>Mạch chạy được ở tần số bao nhiêu trên công nghệ thật — đó là việc của phân tích thời gian tĩnh.</li>
+          <li>Mạch có đúng với <em>mọi</em> đầu vào hay không — mô phỏng chỉ kiểm tra các vector được đưa vào.</li>
+          <li>Mạch tiêu tốn bao nhiêu diện tích và công suất — đó là việc của tổng hợp và phân tích công suất.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Vị trí của mô phỏng trong quy trình thiết kế</h4>
+        <svg viewBox="0 0 470 250" style="width:100%;height:auto">
+          <rect x="24" y="26" width="130" height="44" rx="7" fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="1.8"/>
+          <text x="89" y="53" font-size="12" text-anchor="middle" class="lbl">Mô tả RTL</text>
+          <rect x="24" y="103" width="130" height="44" rx="7" fill="var(--violet-soft)" stroke="var(--violet)" stroke-width="1.8"/>
+          <text x="89" y="123" font-size="12" text-anchor="middle" class="lbl">Testbench</text>
+          <text x="89" y="138" font-size="9" text-anchor="middle" fill="var(--violet)">môi trường của mạch</text>
+          <rect x="216" y="64" width="130" height="46" rx="7" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2"/>
+          <text x="281" y="84" font-size="12.5" text-anchor="middle" class="lbl">Bộ mô phỏng</text>
+          <text x="281" y="99" font-size="9" text-anchor="middle" fill="var(--teal)">hàng đợi sự kiện</text>
+          <rect x="216" y="176" width="130" height="44" rx="7" fill="var(--surface2)" stroke="var(--line)" stroke-width="1.6"/>
+          <text x="281" y="196" font-size="11.5" text-anchor="middle" class="lbl">Thư viện công nghệ</text>
+          <text x="281" y="211" font-size="9" text-anchor="middle" fill="var(--muted)">chỉ khi mô phỏng sau tổng hợp</text>
+          <rect x="392" y="42" width="66" height="44" rx="7" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.8"/>
+          <text x="425" y="62" font-size="11" text-anchor="middle" class="lbl">Waveform</text>
+          <text x="425" y="76" font-size="9" text-anchor="middle" fill="var(--green)">tệp VCD</text>
+          <rect x="392" y="106" width="66" height="44" rx="7" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.8"/>
+          <text x="425" y="126" font-size="11" text-anchor="middle" class="lbl">Báo cáo</text>
+          <text x="425" y="140" font-size="9" text-anchor="middle" fill="var(--green)">PASS / FAIL</text>
+          <!-- dây nối: mọi đầu mút nằm đúng trên cạnh khối -->
+          <path d="M154 48 H186 V80 H216" fill="none" stroke="var(--acc)" stroke-width="2"/>
+          <path d="M216 80 l-9 -4 v8 z" fill="var(--acc)"/>
+          <path d="M154 125 H186 V94 H216" fill="none" stroke="var(--violet)" stroke-width="2"/>
+          <path d="M216 94 l-9 -4 v8 z" fill="var(--violet)"/>
+          <path d="M281 176 V110" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="5 3"/>
+          <path d="M281 110 l-4 9 h8 z" fill="var(--muted)"/>
+          <path d="M346 80 H370 V64 H392" fill="none" stroke="var(--teal)" stroke-width="2"/>
+          <path d="M392 64 l-9 -4 v8 z" fill="var(--teal)"/>
+          <path d="M346 94 H370 V128 H392" fill="none" stroke="var(--teal)" stroke-width="2"/>
+          <path d="M392 128 l-9 -4 v8 z" fill="var(--teal)"/>
+          <circle cx="370" cy="80" r="3" fill="var(--teal)"/>
+        </svg>
+        <p class="sub" style="margin-top:8px">Bộ mô phỏng nhận hai mô tả Verilog — mạch cần kiểm tra và testbench —
+          rồi sinh ra giản đồ thời gian cùng báo cáo. Thư viện công nghệ chỉ tham gia khi mô phỏng netlist sau
+          tổng hợp, lúc đó mỗi cell mang thêm số liệu trễ thật.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 4. HAI NGUYÊN TẮC TÍNH LẠI ══════════════ -->
+<section class="slide" data-sec="Nguyên lý mô phỏng" data-title="Hai nguyên tắc tính lại">
+  <div class="hd"><div><div class="eyebrow">4.1.2 · Nguyên tắc mô phỏng mạch số</div><h2>Hai cách tính lại giá trị khi đầu vào thay đổi</h2></div>
+    <span class="tag">Nguyên lý</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--red)">
+        <h4><span class="n">1</span>Tính lại toàn bộ mạch</h4>
+        <p class="sub" style="margin-bottom:8px">Mỗi khi có một đầu vào đổi giá trị, tính lại giá trị của
+          <strong>mọi</strong> tín hiệu trong mạch theo thứ tự tô-pô.</p>
+        <svg viewBox="0 0 430 168" style="width:100%;height:auto">
+          <g id="g_all"></g>
+        </svg>
+        <div class="g2" style="gap:9px;margin-top:8px">
+          <div class="stat bad"><span class="l">SỐ PHẦN TỬ TÍNH LẠI</span><span class="v" style="font-size:19px">toàn bộ N</span></div>
+          <div class="stat"><span class="l">ĐỘ PHỨC TẠP MỖI LẦN</span><span class="v" style="font-size:19px">O(N)</span></div>
+        </div>
+        <p class="sub" style="margin-top:8px">Cách này đơn giản nhưng lãng phí: trong một mạch lớn, một lần đổi
+          đầu vào thường chỉ ảnh hưởng tới một phần rất nhỏ số tín hiệu.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--green)">
+        <h4><span class="n">2</span>Chỉ tính lại theo đường lan từ đầu vào</h4>
+        <p class="sub" style="margin-bottom:8px">Chỉ tính lại những phần tử nằm trên đường lan truyền từ đầu vào
+          vừa đổi, và dừng lại khi một tín hiệu trung gian giữ nguyên giá trị.</p>
+        <svg viewBox="0 0 430 168" style="width:100%;height:auto">
+          <g id="g_path"></g>
+        </svg>
+        <div class="g2" style="gap:9px;margin-top:8px">
+          <div class="stat ok"><span class="l">SỐ PHẦN TỬ TÍNH LẠI</span><span class="v" style="font-size:19px">chỉ fanout</span></div>
+          <div class="stat"><span class="l">ĐỘ PHỨC TẠP MỖI LẦN</span><span class="v" style="font-size:19px">O(k), k ≪ N</span></div>
+        </div>
+        <p class="sub" style="margin-top:8px">Đây là nguyên tắc mà mọi bộ mô phỏng thương mại dùng. Nó dẫn thẳng
+          tới thuật toán mô phỏng dựa trên sự kiện ở slide sau.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 5. MÔ PHỎNG DỰA TRÊN SỰ KIỆN ══════════════ -->
+<section class="slide" data-sec="Nguyên lý mô phỏng" data-title="Mô phỏng dựa trên sự kiện">
+  <div class="hd"><div><div class="eyebrow">4.1.3 · Thuật toán</div><h2>Mô phỏng dựa trên sự kiện (event-driven simulation)</h2></div>
+    <span class="tag">Trọng tâm</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4>Ba bước của thuật toán</h4>
+        <table style="margin-top:6px"><tbody>
+          <tr><td style="width:9%;color:var(--acc)"><strong>B1</strong></td>
+            <td>Đưa các tín hiệu đầu vào thay đổi vào <strong>hàng đợi sự kiện</strong> tại thời gian mô phỏng 0.</td></tr>
+          <tr><td style="color:var(--acc)"><strong>B2</strong></td>
+            <td>Lặp lại đến khi hàng đợi rỗng:
+              <ol style="margin:5px 0 0 16px;padding:0;font-size:13.5px;line-height:1.6">
+                <li>Lấy một sự kiện ra khỏi hàng đợi.</li>
+                <li>Với mỗi phần tử là <em>fanout</em> của tín hiệu đó — cổng logic, lệnh gán, khối always, module con —
+                  tính lại giá trị đầu ra tương ứng.</li>
+                <li>Nếu đầu ra <strong>đổi giá trị</strong>, đưa sự kiện mới vào hàng đợi tại thời điểm
+                  <span class="k">t_hiện_tại + trễ_của_phần_tử</span>.</li>
+              </ol></td></tr>
+          <tr><td style="color:var(--acc)"><strong>B3</strong></td>
+            <td>Khi hàng đợi rỗng, giữ nguyên kết quả hoặc nhảy tới thời điểm mô phỏng kế tiếp có sự kiện.</td></tr>
+        </tbody></table>
+      </div>
+      <div class="callout key"><div class="lbl">Hai hệ quả cần nhớ</div>
+        <p class="sub">Thứ nhất, nếu đầu ra của một phần tử <strong>không đổi giá trị</strong> thì không sinh sự kiện
+          mới, và toàn bộ nhánh phía sau không bị tính lại — đó là nguồn gốc của tốc độ. Thứ hai, thời gian mô phỏng
+          <strong>nhảy</strong> từ sự kiện này sang sự kiện kế tiếp chứ không tăng đều theo từng đơn vị; giữa hai sự
+          kiện, bộ mô phỏng không làm gì cả.</p></div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Vòng lặp chính của bộ mô phỏng</h4>
+        <svg viewBox="0 0 470 330" style="width:100%;height:auto">
+          <!-- hàng đợi -->
+          <rect x="20" y="26" width="196" height="118" rx="8" fill="var(--violet-soft)" stroke="var(--violet)" stroke-width="1.8"/>
+          <text x="118" y="46" font-size="12" text-anchor="middle" class="lbl">Hàng đợi sự kiện</text>
+          <g font-size="10" font-family="var(--mono)">
+            <rect x="34" y="56" width="168" height="18" rx="3" fill="var(--surface)" stroke="var(--violet)" stroke-width="1"/>
+            <text x="42" y="69" fill="var(--ink2)">t = 0   a: 0 → 1</text>
+            <rect x="34" y="80" width="168" height="18" rx="3" fill="var(--surface)" stroke="var(--violet)" stroke-width="1"/>
+            <text x="42" y="93" fill="var(--ink2)">t = 2   n1: 1 → 0</text>
+            <rect x="34" y="104" width="168" height="18" rx="3" fill="var(--surface)" stroke="var(--violet)" stroke-width="1"/>
+            <text x="42" y="117" fill="var(--ink2)">t = 5   y: 0 → 1</text>
+          </g>
+          <text x="118" y="136" font-size="9" text-anchor="middle" fill="var(--violet)">sắp xếp theo thời gian tăng dần</text>
+          <!-- bộ tính -->
+          <rect x="274" y="42" width="176" height="86" rx="8" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.8"/>
+          <text x="362" y="72" font-size="12" text-anchor="middle" class="lbl">Tính lại fanout</text>
+          <text x="362" y="90" font-size="9.5" text-anchor="middle" fill="var(--teal)">cổng · assign · always</text>
+          <text x="362" y="106" font-size="9.5" text-anchor="middle" fill="var(--teal)">module con</text>
+          <!-- lấy sự kiện -->
+          <path d="M216 85 H274" fill="none" stroke="var(--violet)" stroke-width="2.2"/>
+          <path d="M274 85 l-9 -4 v8 z" fill="var(--violet)"/>
+          <text x="245" y="78" font-size="9" text-anchor="middle" fill="var(--violet)">lấy ra</text>
+          <!-- phản hồi: đầu ra đổi giá trị -->
+          <path d="M362 128 V186 H118 V144" fill="none" stroke="var(--teal)" stroke-width="2.2"/>
+          <path d="M118 144 l-4 9 h8 z" fill="var(--teal)"/>
+          <text x="240" y="180" font-size="9.5" text-anchor="middle" fill="var(--teal)">nếu đầu ra đổi giá trị: chèn lại tại t + trễ</text>
+          <!-- nhánh không đổi -->
+          <path d="M450 85 H466 V212 H362 V186" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="5 3"/>
+          <circle cx="362" cy="186" r="3.2" fill="var(--teal)"/>
+          <text x="410" y="226" font-size="9.5" text-anchor="middle" fill="var(--muted)">không đổi: dừng, không sinh sự kiện</text>
+          <!-- đồng hồ mô phỏng -->
+          <rect x="20" y="250" width="430" height="52" rx="8" fill="var(--surface2)" stroke="var(--line)" stroke-width="1.4"/>
+          <text x="34" y="272" font-size="11" class="lbl">Đồng hồ mô phỏng</text>
+          <text x="34" y="290" font-size="9.5" fill="var(--muted)">nhảy tới thời điểm nhỏ nhất còn sự kiện trong hàng đợi, không tăng đều</text>
+          <path d="M118 144 V250" fill="none" stroke="none"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 6. WIDGET HÀNG ĐỢI SỰ KIỆN ══════════════ -->
+<section class="slide" data-sec="Nguyên lý mô phỏng" data-title="Chạy thử hàng đợi sự kiện" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.1.3 · Chạy thử</div><h2>Hàng đợi sự kiện trên một mạch bốn cổng</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 306px">
+      <div class="card" style="padding:11px 13px">
+        <h4>Mạch và trễ từng cổng</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">and</span>  #<span class="nu">2</span> G1(n1, a, b);
+<span class="kw">or</span>   #<span class="nu">3</span> G2(n2, b, c);
+<span class="kw">xor</span>  #<span class="nu">2</span> G3(n3, n1, n2);
+<span class="kw">not</span>  #<span class="nu">1</span> G4(y,  n3);</pre>
+        <div class="row" id="evStim" style="gap:6px;flex-wrap:wrap;margin-top:9px"></div>
+      </div>
+      <div class="row" style="gap:8px;margin-top:9px">
+        <button class="btn pri" id="evStep">Một bước</button>
+        <button class="btn" id="evRun">Chạy hết</button>
+        <button class="btn" id="evRst">Đặt lại</button>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:9px;padding:10px 12px">
+        <h4 style="margin:0 0 6px">Hàng đợi sự kiện</h4>
+        <div id="evQueue" style="min-height:96px"></div>
+      </div>
+      <div class="g2" style="gap:8px;margin-top:9px">
+        <div class="stat"><span class="l">THỜI GIAN t</span><span class="v" id="evT" style="font-size:19px">0</span></div>
+        <div class="stat"><span class="l">SỐ LẦN TÍNH LẠI</span><span class="v" id="evN" style="font-size:19px">0</span></div>
+      </div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Sơ đồ mạch — tín hiệu vừa đổi giá trị được tô đỏ</h4>
+        <svg id="evSvg" viewBox="0 0 560 230" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:10px">
+        <h4>Giản đồ thời gian</h4>
+        <svg id="evWf" viewBox="0 0 560 172" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="callout" id="evNote" style="margin-top:9px"><div class="lbl">Trạng thái</div>
+        <p class="sub" id="evNoteT">Bấm “Một bước” để lấy một sự kiện ra khỏi hàng đợi.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 7. ƯU ĐIỂM VÀ SO SÁNH ══════════════ -->
+<section class="slide" data-sec="Nguyên lý mô phỏng" data-title="So sánh các kiểu mô phỏng">
+  <div class="hd"><div><div class="eyebrow">4.1.3 · Đánh giá</div><h2>Ưu điểm của mô phỏng sự kiện và các kiểu mô phỏng khác</h2></div>
+    <span class="tag">Nguyên lý</span></div>
+  <div class="body">
+    <div class="g3" style="gap:16px">
+      <div class="card teal"><h4>Ưu điểm của mô phỏng sự kiện</h4>
+        <ul class="tick">
+          <li><strong>Tốc độ</strong>: chỉ tính lại phần mạch thực sự bị ảnh hưởng.</li>
+          <li><strong>Mô hình hoá được thời gian</strong>: mỗi phần tử mang trễ riêng, quan sát được thứ tự lan truyền.</li>
+          <li><strong>Dùng được cho mọi mức mô tả</strong>: cấu trúc, RTL và hoạt động đều đưa về cùng một hàng đợi.</li>
+        </ul>
+      </div>
+      <div class="card"><h4>Mô phỏng theo chu kỳ</h4>
+        <p class="sub">Bỏ toàn bộ thông tin trễ, chỉ tính giá trị tín hiệu tại mỗi sườn xung nhịp. Nhanh hơn mô phỏng
+          sự kiện khoảng một bậc độ lớn nhưng không phát hiện được hazard, không mô phỏng được mạch bất đồng bộ và
+          không kiểm tra được ràng buộc thời gian.</p>
+      </div>
+      <div class="card"><h4>Mô phỏng hình thức</h4>
+        <p class="sub">Không chạy vector đầu vào mà chứng minh tính chất bằng phương pháp toán học. Bao phủ mọi
+          trường hợp nhưng chỉ áp dụng được cho khối cỡ vừa và cho các tính chất phát biểu được dưới dạng assertion.</p>
+      </div>
+    </div>
+    <table style="margin-top:14px"><thead><tr>
+      <th style="width:24%">Tiêu chí</th><th style="width:25%">Mô phỏng sự kiện</th>
+      <th style="width:25%">Mô phỏng theo chu kỳ</th><th style="width:26%">Kiểm chứng hình thức</th></tr></thead><tbody>
+      <tr><td>Thông tin thời gian</td><td>Có, theo từng phần tử</td><td>Chỉ theo chu kỳ</td><td>Không</td></tr>
+      <tr><td>Phát hiện hazard</td><td>Có</td><td>Không</td><td>Không áp dụng</td></tr>
+      <tr><td>Mạch bất đồng bộ</td><td>Mô phỏng được</td><td>Không</td><td>Hạn chế</td></tr>
+      <tr><td>Độ bao phủ đầu vào</td><td>Chỉ các vector được đưa vào</td><td>Chỉ các vector được đưa vào</td><td>Toàn bộ không gian</td></tr>
+      <tr><td>Quy mô mạch xử lý được</td><td>Toàn chip</td><td>Toàn chip</td><td>Khối cỡ vừa</td></tr>
+    </tbody></table>
+    <div class="callout key" style="margin-top:10px"><div class="lbl">Cách dùng trong dự án thật</div>
+      <p class="sub">Ba phương pháp bổ sung cho nhau chứ không thay thế nhau. Mô phỏng sự kiện dùng cho phần lớn
+        công việc kiểm chứng chức năng; mô phỏng theo chu kỳ dùng cho các đợt hồi quy dài cần thông lượng cao;
+        kiểm chứng hình thức dùng cho các khối nhỏ nhưng tới hạn như bộ phân xử bus và logic điều khiển cache.</p></div>
+  </div>
+</section>
+<!-- ══════════════ 8. MÔ HÌNH TRỄ ══════════════ -->
+<section class="slide" data-sec="Thời gian mô phỏng" data-title="Ba mô hình trễ">
+  <div class="hd"><div><div class="eyebrow">4.1.4 · Thời gian trong mô phỏng</div><h2>Ba mức mô hình hoá trễ của phần tử</h2></div>
+    <span class="tag">Thời gian</span></div>
+  <div class="body g3">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4><span class="n">1</span>Không trễ (zero-delay)</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">and</span> A0(OUT, A, B);
+<span class="kw">assign</span> OUT = A &amp; B;
+<span class="kw">always</span> @(A, B)
+  OUT = A &amp; B;</pre>
+        <p class="sub" style="margin-top:8px">Sự kiện tại <span class="k">OUT</span> được đưa vào hàng đợi tại
+          <strong>chính thời điểm mô phỏng hiện tại</strong>. Đầu ra đổi cùng lúc với đầu vào.</p>
+        <p class="sub" style="margin-top:6px">Không thực tế về mặt vật lý, nhưng chấp nhận được khi chỉ xét hành vi
+          của mạch đồng bộ giữa hai sườn xung nhịp. Đây là mô hình mặc định khi viết RTL để tổng hợp.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--violet)">
+        <h4><span class="n">2</span>Trễ đơn vị (unit-delay)</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">and</span> #<span class="nu">1</span> A0(OUT, A, B);
+<span class="kw">assign</span> #<span class="nu">1</span> OUT = A &amp; B;</pre>
+        <p class="sub" style="margin-top:8px">Mỗi phần tử mang một đơn vị trễ tưởng tượng. Không chính xác so với
+          công nghệ thật, nhưng là xấp xỉ đủ tốt và thể hiện được một sự thật quan trọng: <strong>số mức logic
+          ảnh hưởng tới tốc độ mạch</strong>.</p>
+        <p class="sub" style="margin-top:6px">Rất tiện để quan sát thứ tự lan truyền tín hiệu qua từng tầng cổng
+          trên giản đồ thời gian.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--teal)">
+        <h4><span class="n">3</span>Trễ theo thư viện công nghệ</h4>
+        <p class="sub">Sau khi tổng hợp, mỗi cell mang số liệu trễ thật lấy từ tệp <span class="k">.lib</span>,
+          phụ thuộc vào tải điện dung ở đầu ra và độ dốc sườn tín hiệu ở đầu vào. Trễ dây dẫn lấy từ tệp
+          <span class="k">SDF</span> sinh ra sau bước trích xuất ký sinh.</p>
+        <p class="sub" style="margin-top:6px">Đây là mô hình dùng cho <em>gate-level simulation</em> — bước kiểm tra
+          cuối cùng trước khi tapeout, chạy rất chậm nên chỉ dùng cho một tập vector chọn lọc.</p>
+        <div class="stat" style="margin-top:9px"><span class="l">TỐC ĐỘ TƯƠNG ĐỐI</span>
+          <span class="v" style="font-size:18px">RTL ≫ gate-level</span></div>
+      </div>
+    </div>
+    <div class="callout warn" style="grid-column:1/-1"><div class="lbl">Quy tắc khi viết mã tổng hợp được</div>
+      <p>Không viết độ trễ của cổng logic trong phần mô tả mạch. Lý do: con số đó vẫn không chính xác so với công nghệ
+        thật, công cụ tổng hợp bỏ qua nó nên không có kết quả tổng hợp tương ứng, và nó làm chậm tốc độ mô phỏng.
+        Trễ thật lấy được ngay sau bước tổng hợp qua tệp SDF. <strong>Chỉ dùng độ trễ trong testbench.</strong></p></div>
+  </div>
+</section>
+
+<!-- ══════════════ 9. TIMESCALE ══════════════ -->
+<section class="slide" data-sec="Thời gian mô phỏng" data-title="timescale" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.1.4 · Đơn vị thời gian</div><h2>Chỉ thị `timescale: đơn vị và độ phân giải</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body g2b">
+    <div class="col">
+      <div class="formula big" style="font-size:16px">`timescale <em>time_unit</em> / <em>time_precision</em></div>
+      <p style="margin-top:8px"><span class="k">time_unit</span> quy định một đơn vị của số viết sau dấu
+        <span class="k">#</span> bằng bao nhiêu thời gian thật. <span class="k">time_precision</span> quy định
+        bộ mô phỏng làm tròn mọi giá trị thời gian tới mức nào. Độ phân giải <strong>không được lớn hơn</strong>
+        đơn vị.</p>
+      <div class="card"><h4>Ba quy tắc bắt buộc</h4>
+        <ul class="tick">
+          <li>Chỉ thị đặt <strong>trước</strong> khai báo module và có hiệu lực cho mọi module phía sau nó trong
+            cùng tệp, cho tới chỉ thị <span class="k">`timescale</span> kế tiếp.</li>
+          <li>Nếu một module không có <span class="k">`timescale</span>, nó thừa hưởng chỉ thị của tệp được biên dịch
+            trước đó — nguồn gốc của nhiều lỗi khó tìm. Nên đặt chỉ thị ở mọi tệp.</li>
+          <li>Độ phân giải nhỏ nhất trong toàn bộ thiết kế quyết định bước thời gian của cả bộ mô phỏng, kể cả với
+            các module khai báo độ phân giải thô hơn.</li>
+        </ul>
+      </div>
+      <div class="callout"><div class="lbl">Giá phải trả của độ phân giải</div>
+        <p class="sub">Độ phân giải càng mịn thì bộ nhớ cho hàng đợi sự kiện càng lớn và tốc độ càng chậm.
+          Với <span class="k">1ns/1ps</span>, mỗi giá trị thời gian cần dải rộng gấp 1000 lần so với
+          <span class="k">1ns/1ns</span>. Chọn độ phân giải vừa đủ cho bài toán.</p></div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Chọn timescale để xem giá trị thời gian được làm tròn ra sao</h4>
+        <div class="row" id="tsPick" style="gap:6px;flex-wrap:wrap;margin:8px 0"></div>
+        <pre class="vlog" id="tsCode" style="font-size:12px"></pre>
+        <table class="tt" style="margin-top:9px"><thead><tr>
+          <th>Lệnh</th><th>Giá trị viết</th><th>Thời gian thật</th><th>Sau làm tròn</th></tr></thead>
+          <tbody id="tsRows"></tbody></table>
+        <div class="g3" style="gap:8px;margin-top:9px">
+          <div class="stat"><span class="l">ĐƠN VỊ</span><span class="v" id="tsUnit" style="font-size:17px">1 ns</span></div>
+          <div class="stat"><span class="l">ĐỘ PHÂN GIẢI</span><span class="v" id="tsPrec" style="font-size:17px">100 fs</span></div>
+          <div class="stat"><span class="l">BƯỚC NHỎ NHẤT</span><span class="v" id="tsStep" style="font-size:17px">0,0001 ns</span></div>
+        </div>
+        <p class="sub" id="tsNote" style="margin-top:9px"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 10. TRỄ DÂY DẪN VÀ TRỄ CỔNG ══════════════ -->
+<section class="slide" data-sec="Thời gian mô phỏng" data-title="Trễ dây dẫn và trễ cổng">
+  <div class="hd"><div><div class="eyebrow">4.1.4 · Vị trí đặt trễ</div><h2>Trễ đặt trên dây dẫn và trễ đặt trên phần tử</h2></div>
+    <span class="tag">Thời gian</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Sáu cách viết và trễ tổng tương ứng</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:56%">Cách viết</th><th style="width:20%">Trễ tổng</th><th style="width:24%">Trễ nằm ở đâu</th></tr></thead><tbody>
+          <tr><td class="mono">wire #5 net_1;</td><td class="mono">5</td><td>dây dẫn</td></tr>
+          <tr><td class="mono">and #4 (z, x, y);</td><td class="mono">4</td><td>cổng</td></tr>
+          <tr class="hl"><td class="mono">wire #2 z;<br>and #3 (z, x, y);</td><td class="mono">5</td><td>3 cổng + 2 dây</td></tr>
+          <tr class="hl"><td class="mono">wire #3 c;<br>assign #5 c = a &amp; b;</td><td class="mono">8</td><td>5 lệnh gán + 3 dây</td></tr>
+          <tr><td class="mono">assign z = #3 a &amp; b;</td><td class="mono">3</td><td>intra-statement</td></tr>
+          <tr><td class="mono">assign #3 z = a &amp; b;</td><td class="mono">3</td><td>inter-statement</td></tr>
+        </tbody></table>
+        <p class="sub" style="margin-top:8px">Trễ khai báo trên <span class="k">wire</span> và trễ khai báo trên phần
+          tử lái dây đó <strong>cộng dồn</strong> với nhau. Đây là điểm hay bị bỏ sót khi đọc mã có sẵn.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card acc"><h4>Hai vị trí của dấu # trong lệnh assign</h4>
+        <pre class="vlog" style="font-size:12px"><span class="cm">// intra-statement: tính RHS ngay, gán sau 3 đơn vị</span>
+<span class="kw">assign</span> z = #<span class="nu">3</span> a &amp; b;
+
+<span class="cm">// inter-statement: chờ 3 đơn vị rồi mới tính và gán</span>
+<span class="kw">assign</span> #<span class="nu">3</span> z = a &amp; b;</pre>
+        <p class="sub" style="margin-top:8px">Với lệnh <span class="k">assign</span> liên tục, cả hai cách đều mô hình
+          hoá trễ lan truyền của một phần tử thật, nhưng <strong>chỉ cách viết thứ hai</strong> mô tả đúng hành vi
+          quán tính của cổng logic: xung ở đầu vào hẹp hơn trễ của cổng sẽ bị nuốt, không xuất hiện ở đầu ra.</p>
+      </div>
+      <div class="card teal"><h4>Trễ quán tính và trễ truyền dẫn</h4>
+        <p class="sub">Verilog mặc định dùng <em>inertial delay</em> cho cả cổng và lệnh gán liên tục: một xung ngắn
+          hơn giá trị trễ bị loại bỏ hoàn toàn, giống hành vi của cổng CMOS thật khi tụ tải chưa kịp nạp.
+          <em>Transport delay</em> — giữ nguyên mọi xung và chỉ dịch chúng theo thời gian — chỉ có được khi khai báo
+          trễ trên <span class="k">wire</span>.</p>
+      </div>
+      <div class="callout warn"><div class="lbl">Hệ quả khi gỡ lỗi</div>
+        <p class="sub">Nếu một xung nhiễu biến mất trên waveform sau khi thêm trễ cổng, đó không phải lỗi của bộ mô
+          phỏng mà là hành vi quán tính đúng như thiết kế của ngôn ngữ.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 11. INTER VÀ INTRA STATEMENT DELAY ══════════════ -->
+<section class="slide" data-sec="Thời gian mô phỏng" data-title="Inter và intra statement delay" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.1.4 · Trễ trong lệnh gán tuần tự</div><h2>Inter-statement delay và intra-statement delay</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 330px">
+      <table style="font-size:13.5px"><thead><tr>
+        <th style="width:34%">Kiểu</th><th>Ý nghĩa</th></tr></thead><tbody>
+        <tr><td><strong>Inter-statement</strong><br><span class="mono">#4 c = d;</span></td>
+          <td>Trễ <strong>cả</strong> việc tính vế phải lẫn việc gán. Tiến trình dừng 4 đơn vị, sau đó mới đọc
+            <span class="k">d</span>.</td></tr>
+        <tr class="hl"><td><strong>Intra-statement</strong><br><span class="mono">c = #4 d;</span></td>
+          <td>Trễ việc gán nhưng <strong>không</strong> trễ việc tính vế phải. Đọc <span class="k">d</span> ngay,
+            giữ giá trị đó lại, 4 đơn vị sau mới ghi vào <span class="k">c</span>.</td></tr>
+      </tbody></table>
+      <div class="row" id="idPick" style="gap:6px;flex-wrap:wrap;margin-top:10px"></div>
+      <pre class="vlog" id="idCode" style="font-size:12px;margin-top:9px"></pre>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:9px;padding:10px 12px">
+        <h4 style="margin:0 0 6px">Kết quả $monitor</h4>
+        <pre class="vlog" id="idOut" style="font-size:11.5px;margin:0"></pre>
+      </div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Giản đồ thời gian — vòng tròn xanh đánh dấu thời điểm đọc vế phải</h4>
+        <svg id="idSvg" viewBox="0 0 560 200" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="callout" id="idNote" style="margin-top:10px"><div class="lbl">Giải thích</div>
+        <p class="sub" id="idNoteT"></p></div>
+      <div class="card violet" style="margin-top:10px"><h4>Vì sao intra-statement là cách mô hình hoá đúng</h4>
+        <p class="sub">Một phần tử vật lý đọc đầu vào tại thời điểm nó thay đổi rồi mới truyền kết quả ra sau một
+          khoảng trễ. Đó chính là ngữ nghĩa của <span class="k">c = #4 d;</span>. Cách viết
+          <span class="k">#4 c = d;</span> mô tả một tiến trình <em>chờ rồi mới nhìn</em>, phù hợp để sinh kích thích
+          trong testbench nhưng không phải để mô hình hoá phần cứng.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 12. VÙNG SỰ KIỆN ══════════════ -->
+<section class="slide" data-sec="Thời gian mô phỏng" data-title="Vùng sự kiện trong một bước thời gian">
+  <div class="hd"><div><div class="eyebrow">4.1.4 · Bổ sung</div><h2>Bốn vùng sự kiện trong cùng một thời điểm mô phỏng</h2></div>
+    <span class="tag">Nguyên lý</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <p>Trong cùng một giá trị thời gian mô phỏng, chuẩn Verilog chia hàng đợi thành nhiều <em>vùng</em> được xử lý
+        theo thứ tự cố định. Đây là cơ chế giải thích vì sao <span class="k">$strobe</span> và
+        <span class="k">$monitor</span> in ra giá trị khác <span class="k">$display</span>, và vì sao phép gán
+        non-blocking tránh được đua tín hiệu.</p>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Thứ tự xử lý trong một bước thời gian</h4>
+        <svg viewBox="0 0 470 250" style="width:100%;height:auto">
+          <g id="rgSvg"></g>
+        </svg>
+      </div>
+    </div>
+    <div class="col">
+      <table style="font-size:13.5px"><thead><tr>
+        <th style="width:26%">Vùng</th><th>Chứa những gì</th></tr></thead><tbody>
+        <tr><td><strong>Active</strong></td>
+          <td>Phép gán blocking, tính vế phải của phép gán non-blocking, lệnh gán liên tục, lời gọi
+            <span class="k">$display</span> và <span class="k">$write</span>. Thứ tự bên trong vùng này
+            <strong>không xác định</strong>.</td></tr>
+        <tr><td><strong>Inactive</strong></td>
+          <td>Các sự kiện bị hoãn bằng <span class="k">#0</span>. Chỉ chạy sau khi vùng active đã rỗng.</td></tr>
+        <tr class="hl"><td><strong>NBA</strong></td>
+          <td>Việc <em>ghi</em> giá trị của phép gán non-blocking. Vế phải đã được tính từ vùng active, nên mọi
+            phép gán non-blocking trong cùng bước thời gian đều dùng giá trị cũ.</td></tr>
+        <tr><td><strong>Monitor</strong></td>
+          <td><span class="k">$monitor</span> và <span class="k">$strobe</span>. Chạy sau cùng nên luôn in ra giá trị
+            <strong>đã ổn định</strong> của bước thời gian đó.</td></tr>
+      </tbody></table>
+      <div class="callout key" style="margin-top:10px"><div class="lbl">Hai hệ quả thực hành</div>
+        <p class="sub">Thứ nhất, <span class="k">$display</span> đặt trong khối
+          <span class="k">always @(posedge clk)</span> có thể in ra giá trị cũ của một thanh ghi được gán bằng
+          <span class="k">&lt;=</span>, vì việc ghi chưa xảy ra; muốn in giá trị mới thì dùng
+          <span class="k">$strobe</span>. Thứ hai, dùng <span class="k">&lt;=</span> cho mọi thanh ghi đồng bộ khiến
+          thứ tự viết các khối <span class="k">always</span> không còn ảnh hưởng tới kết quả — đó là lý do kỹ thuật
+          của quy tắc đã học ở buổi 2.</p></div>
+      <div class="callout warn"><div class="lbl">Không gán một biến trong nhiều khối lệnh</div>
+        <p class="sub">Nếu hai khối <span class="k">always</span> cùng ghi vào một biến trong cùng bước thời gian,
+          thứ tự trong vùng active không xác định nên kết quả mô phỏng có thể khác nhau giữa hai bộ mô phỏng,
+          hoặc giữa hai lần chạy. Đây là lỗi thiết kế, không phải lỗi công cụ.</p></div>
+    </div>
+  </div>
+</section>
+<!-- ══════════════ 13. ĐỊNH NGHĨA TESTBENCH ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Testbench là gì">
+  <div class="hd"><div><div class="eyebrow">4.2.1 · Định nghĩa</div><h2>Testbench: mô hình hoá môi trường hoạt động của mạch</h2></div>
+    <span class="tag">Testbench</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <p>Testbench là một module Verilog <strong>không có đầu vào và đầu ra</strong>, dùng để mô hình hoá môi trường
+        mà mạch cần kiểm tra sẽ hoạt động trong đó. Mạch cần kiểm tra được gọi là <span class="k">DUT</span>
+        (device under test) hoặc <span class="k">DUV</span> (design under verification).</p>
+      <div class="card acc"><h4>Ba chức năng bắt buộc</h4>
+        <ul class="tick">
+          <li><strong>Tạo tín hiệu đầu vào</strong> — input vector, input pattern, stimulus — rồi đưa tới DUT.</li>
+          <li><strong>Theo dõi tín hiệu đầu ra</strong> của DUT.</li>
+          <li><strong>So sánh</strong> đầu ra thu được với đầu ra chuẩn đã biết là đúng, rồi báo kết quả.</li>
+        </ul>
+      </div>
+      <div class="card teal"><h4>Vì sao testbench không có cổng</h4>
+        <p class="sub">Testbench là module ở đỉnh cây phân cấp khi mô phỏng, không có gì bên ngoài để nối vào.
+          Nó cũng <strong>không cần tổng hợp được</strong>, nên được phép dùng những cấu trúc mà mã thiết kế bị cấm:
+          <span class="k">initial</span>, vòng lặp <span class="k">while</span> và <span class="k">forever</span>,
+          <span class="k">fork/join</span>, thao tác tệp, <span class="k">force/release</span> và các hàm hệ thống.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Cấu trúc chung của một testbench</h4>
+        <svg viewBox="0 0 470 268" style="width:100%;height:auto">
+          <rect x="14" y="14" width="442" height="240" rx="10" fill="none" stroke="var(--violet)" stroke-width="2" stroke-dasharray="7 4"/>
+          <text x="26" y="32" font-size="11" fill="var(--violet)" font-weight="700">module adder4bit_tb;  — không có cổng</text>
+          <!-- khối sinh kích thích -->
+          <rect x="34" y="52" width="106" height="60" rx="7" fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="1.8"/>
+          <text x="87" y="76" font-size="11" text-anchor="middle" class="lbl">Sinh kích thích</text>
+          <text x="87" y="92" font-size="9" text-anchor="middle" fill="var(--acc)">initial / for / random</text>
+          <!-- DUT -->
+          <rect x="196" y="46" width="106" height="72" rx="7" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2.2"/>
+          <text x="249" y="76" font-size="12.5" text-anchor="middle" class="lbl">DUT</text>
+          <text x="249" y="92" font-size="9" text-anchor="middle" fill="var(--teal)">mạch cần kiểm tra</text>
+          <text x="249" y="106" font-size="9" text-anchor="middle" fill="var(--teal)">adder4bit</text>
+          <!-- khối kiểm tra -->
+          <rect x="352" y="52" width="90" height="60" rx="7" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.8"/>
+          <text x="397" y="76" font-size="11" text-anchor="middle" class="lbl">Kiểm tra</text>
+          <text x="397" y="92" font-size="9" text-anchor="middle" fill="var(--green)">so sánh, báo lỗi</text>
+          <!-- mô hình chuẩn -->
+          <rect x="196" y="168" width="106" height="58" rx="7" fill="var(--violet-soft)" stroke="var(--violet)" stroke-width="1.8"/>
+          <text x="249" y="192" font-size="11" text-anchor="middle" class="lbl">Mô hình chuẩn</text>
+          <text x="249" y="208" font-size="9" text-anchor="middle" fill="var(--violet)">tính đầu ra đúng</text>
+          <!-- sinh xung nhịp -->
+          <rect x="34" y="168" width="106" height="58" rx="7" fill="var(--amber-soft)" stroke="var(--amber)" stroke-width="1.8"/>
+          <text x="87" y="192" font-size="11" text-anchor="middle" class="lbl">Sinh xung nhịp</text>
+          <text x="87" y="208" font-size="9" text-anchor="middle" fill="var(--amber)">forever #5 clk = ~clk</text>
+          <!-- dây: kích thích → DUT, mức y=82 -->
+          <path d="M140 82 H196" fill="none" stroke="var(--acc)" stroke-width="2.2"/>
+          <path d="M196 82 l-9 -4 v8 z" fill="var(--acc)"/>
+          <text x="168" y="76" font-size="8.5" text-anchor="middle" fill="var(--acc)">stim</text>
+          <!-- DUT → kiểm tra -->
+          <path d="M302 82 H352" fill="none" stroke="var(--teal)" stroke-width="2.2"/>
+          <path d="M352 82 l-9 -4 v8 z" fill="var(--teal)"/>
+          <text x="327" y="76" font-size="8.5" text-anchor="middle" fill="var(--teal)">s, co</text>
+          <!-- kích thích → mô hình chuẩn: rẽ nhánh tại x=168 -->
+          <path d="M168 82 V197 H196" fill="none" stroke="var(--acc)" stroke-width="2"/>
+          <path d="M196 197 l-9 -4 v8 z" fill="var(--acc)"/>
+          <circle cx="168" cy="82" r="3.2" fill="var(--acc)"/>
+          <!-- mô hình chuẩn → kiểm tra -->
+          <path d="M302 197 H397 V112" fill="none" stroke="var(--violet)" stroke-width="2"/>
+          <path d="M397 112 l-4 9 h8 z" fill="var(--violet)"/>
+          <!-- xung nhịp → DUT: vào cạnh dưới -->
+          <path d="M140 197 H168" fill="none" stroke="none"/>
+          <path d="M87 168 V150 H249 V118" fill="none" stroke="var(--amber)" stroke-width="2"/>
+          <path d="M249 118 l-4 9 h8 z" fill="var(--amber)"/>
+        </svg>
+        <p class="sub" style="margin-top:8px">Bốn khối bên trong testbench và một khối DUT. Khối mô hình chuẩn chỉ
+          xuất hiện khi testbench tự kiểm tra; với testbench quan sát thủ công thì bỏ khối này và khối kiểm tra.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 14. VÍ DỤ 4.2.1 ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Ví dụ 4.2.1 — testbench bộ cộng 4 bit">
+  <div class="hd"><div><div class="eyebrow">4.2.2 · Ví dụ 4.2.1</div><h2>Testbench cho bộ cộng 4 bit</h2></div>
+    <span class="tag">Ví dụ</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4>Mã testbench đầy đủ</h4>
+        <pre class="vlog" style="font-size:11.5px">`<span class="kw">timescale</span> <span class="nu">1</span>ns / <span class="nu">100</span>fs
+
+<span class="kw">module</span> adder4bit_tb;
+  <span class="cm">// đầu vào của DUT khai báo reg, đầu ra khai báo wire</span>
+  <span class="ty">reg</span>  [<span class="nu">8</span>:<span class="nu">0</span>] stim;
+  <span class="ty">wire</span> [<span class="nu">3</span>:<span class="nu">0</span>] s;
+  <span class="ty">wire</span>       co;
+
+  <span class="cm">// tạo một thực thể của DUT</span>
+  adder4bit adder4bit_DUT (
+    .sum(s), .c_out(co),
+    .a(stim[<span class="nu">8</span>:<span class="nu">5</span>]), .b(stim[<span class="nu">4</span>:<span class="nu">1</span>]), .c(stim[<span class="nu">0</span>]));
+
+  <span class="cm">// sinh kích thích</span>
+  <span class="kw">initial begin</span>
+        stim = <span class="nu">9'b0000_0000_0</span>;   <span class="cm">// t = 0 ns</span>
+    #<span class="nu">10</span> stim = <span class="nu">9'b1111_0000_1</span>;   <span class="cm">// t = 10 ns</span>
+    #<span class="nu">10</span> stim = <span class="nu">9'b0000_1111_1</span>;   <span class="cm">// t = 20 ns</span>
+    #<span class="nu">10</span> stim = <span class="nu">9'b1111_0001_0</span>;   <span class="cm">// t = 30 ns</span>
+    #<span class="nu">10</span> stim = <span class="nu">9'b0001_1111_0</span>;   <span class="cm">// t = 40 ns</span>
+    #<span class="nu">10</span> $stop;                 <span class="cm">// t = 50 ns</span>
+  <span class="kw">end</span>
+
+  <span class="cm">// quan sát đầu ra</span>
+  <span class="kw">initial</span> $monitor(<span class="nu">"%t, a=%d, b=%d, ci=%b, s=%d, co=%b"</span>,
+    $time, stim[<span class="nu">8</span>:<span class="nu">5</span>], stim[<span class="nu">4</span>:<span class="nu">1</span>], stim[<span class="nu">0</span>], s, co);
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card"><h4>Bốn chi tiết cú pháp cần chú ý</h4>
+        <ul class="tick">
+          <li>Tín hiệu nối vào <strong>đầu vào</strong> của DUT phải khai báo <span class="k">reg</span> vì chúng được
+            gán bên trong khối <span class="k">initial</span>. Tín hiệu nối vào <strong>đầu ra</strong> phải khai báo
+            <span class="k">wire</span> vì chúng do DUT lái.</li>
+          <li>Gộp toàn bộ đầu vào vào một vector <span class="k">stim[8:0]</span> giúp viết mỗi vector thử trên một
+            dòng và dễ dàng chuyển sang vòng lặp vét cạn ở ví dụ sau.</li>
+          <li>Nên nối cổng <strong>theo tên</strong> khi tạo thực thể DUT. Nối theo thứ tự trong testbench là nguồn
+            lỗi thường gặp vì thứ tự cổng của DUT có thể thay đổi.</li>
+          <li><span class="k">$monitor</span> chỉ cần gọi <strong>một lần</strong> trong một khối
+            <span class="k">initial</span>; từ đó nó tự in ra mỗi khi một trong các tham số đổi giá trị.</li>
+        </ul>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Kết quả mô phỏng</h4>
+        <pre class="vlog" style="font-size:11.5px">                   0, a= 0, b= 0, ci=0, s= 0, co=0
+                  10, a=15, b= 0, ci=1, s= 0, co=1
+                  20, a= 0, b=15, ci=1, s= 0, co=1
+                  30, a=15, b= 1, ci=0, s= 0, co=1
+                  40, a= 1, b=15, ci=0, s= 0, co=1</pre>
+        <p class="sub" style="margin-top:8px">Bốn vector cuối đều cho <span class="k">s = 0</span> và
+          <span class="k">co = 1</span> vì tổng đúng bằng 16. Đây là các trường hợp tới hạn quanh điểm tràn — chọn
+          vector như vậy có giá trị hơn nhiều so với chọn ngẫu nhiên bốn tổ hợp bất kỳ.</p>
+      </div>
+      <div class="callout warn"><div class="lbl">Bài tập</div>
+        <p class="sub">Viết testbench cho bộ cộng 16 bit ở cả hai kiến trúc CLA và CRA, dùng chung một tập vector và
+          so sánh đầu ra của hai kiến trúc với nhau.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 15. BỐN THÀNH PHẦN ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Bốn thành phần của testbench">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Thành phần</div><h2>Bốn thành phần của một testbench đầy đủ</h2></div>
+    <span class="tag">Testbench</span></div>
+  <div class="body">
+    <div class="g2" style="gap:16px">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4><span class="n">1</span>Tạo thực thể DUT và nối tín hiệu</h4>
+        <p class="sub">Nối đầu vào của DUT với tín hiệu chứa mẫu thử, nối đầu ra với tín hiệu được quan sát.
+          Quy tắc kiểu: đầu vào DUT ↔ <span class="k">reg</span>, đầu ra DUT ↔ <span class="k">wire</span>.</p>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--violet)">
+        <h4><span class="n">2</span>Tạo mẫu tín hiệu đầu vào</h4>
+        <p class="sub">Ba phương pháp: vét cạn mọi tổ hợp, sinh ngẫu nhiên, hoặc dựng theo kịch bản hoạt động.
+          Chất lượng của tập mẫu được đo bằng các chỉ số bao phủ.</p>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--green)">
+        <h4><span class="n">3</span>Quan sát và kiểm tra đầu ra</h4>
+        <p class="sub">Thủ công bằng waveform và <span class="k">$monitor</span>, hoặc tự động bằng một mô hình chuẩn
+          viết trong testbench hay bằng phần mềm ngoài.</p>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--amber)">
+        <h4><span class="n">4</span>Tạo tín hiệu xung nhịp</h4>
+        <p class="sub">Bắt buộc với mọi mạch dãy. Hai cách viết chuẩn dùng <span class="k">always</span> và
+          <span class="k">forever</span>, kèm một khối <span class="k">initial</span> đặt giá trị ban đầu.</p>
+      </div>
+    </div>
+    <div class="callout key" style="margin-top:14px"><div class="lbl">Thứ tự xây dựng nên theo</div>
+      <p>Viết thành phần 1 và 4 trước để có được một mô phỏng chạy được, quan sát waveform bằng thành phần 3 ở dạng
+        thủ công để xác nhận DUT có phản ứng, sau đó mới đầu tư vào thành phần 2 và chuyển thành phần 3 sang tự động.
+        Viết ngay testbench tự kiểm tra khi chưa chắc DUT có chạy hay không thường dẫn tới việc gỡ lỗi đồng thời cả
+        hai phía và mất nhiều thời gian hơn.</p></div>
+    <div class="g3" style="margin-top:14px;gap:16px">
+      <div class="card"><h4>Tỉ lệ công sức trong dự án thật</h4>
+        <p class="sub">Theo khảo sát Wilson Research Group công bố năm 2022, thời gian dành cho kiểm chứng chiếm
+          khoảng <strong>một nửa</strong> tổng thời gian của một dự án ASIC, và số kỹ sư kiểm chứng thường ngang bằng
+          hoặc nhiều hơn số kỹ sư thiết kế. <span class="assum src">có nguồn</span></p></div>
+      <div class="card"><h4>Testbench cũng cần được kiểm tra</h4>
+        <p class="sub">Một testbench báo PASS trên một DUT sai là tình huống nguy hiểm nhất. Cách kiểm tra thông dụng
+          là cố ý chèn lỗi vào DUT — đổi một phép toán, đảo một điều kiện — rồi xác nhận testbench báo FAIL. Kỹ thuật
+          này gọi là <em>fault injection</em> hay <em>mutation testing</em>.</p></div>
+      <div class="card"><h4>Ranh giới với UVM</h4>
+        <p class="sub">Bốn thành phần trên là dạng tối giản. Trong dự án lớn, chúng được chuẩn hoá thành các lớp của
+          phương pháp luận UVM: driver, monitor, scoreboard và sequencer. Cấu trúc logic không đổi, chỉ khác ở mức
+          đóng gói và khả năng tái sử dụng.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 16. SINH KÍCH THÍCH ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Ba phương pháp sinh kích thích" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Thành phần 2</div><h2>Ba phương pháp tạo mẫu tín hiệu đầu vào</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 316px">
+      <div class="row" id="stPick" style="gap:6px;flex-wrap:wrap"></div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:9px">
+        <h4 id="stName" style="margin:0 0 7px"></h4>
+        <p class="sub" id="stDesc" style="margin:0"></p>
+      </div>
+      <div class="slider" style="margin-top:11px">
+        <label>số bit đầu vào</label>
+        <input type="range" id="stW" min="4" max="32" step="1" value="9">
+        <output id="stWv">9</output>
+      </div>
+      <div class="g2" style="gap:8px;margin-top:9px">
+        <div class="stat"><span class="l">SỐ VECTOR CẦN CHẠY</span><span class="v" id="stVec" style="font-size:17px">512</span></div>
+        <div class="stat"><span class="l">THỜI GIAN MÔ PHỎNG</span><span class="v" id="stTime" style="font-size:17px">5,1 µs</span></div>
+      </div>
+      <div class="stat" id="stFeasCard" style="margin-top:8px"><span class="l">TÍNH KHẢ THI</span>
+        <span class="v" id="stFeas" style="font-size:17px">khả thi</span></div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Mã sinh kích thích</h4>
+        <pre class="vlog" id="stCode" style="font-size:12px"></pre>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:10px">
+        <h4>Vùng không gian đầu vào được phủ</h4>
+        <svg id="stSvg" viewBox="0 0 560 150" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="g2" style="gap:12px;margin-top:10px">
+        <div class="card teal"><h4 style="margin:0 0 6px">Ưu điểm</h4>
+          <p class="sub" id="stPro" style="margin:0"></p></div>
+        <div class="card red"><h4 style="margin:0 0 6px">Hạn chế</h4>
+          <p class="sub" id="stCon" style="margin:0"></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 17. VÉT CẠN ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Ví dụ 4.2.2 — vét cạn bằng vòng lặp">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Ví dụ 4.2.2</div><h2>Vét cạn mọi tổ hợp đầu vào bằng vòng lặp for</h2></div>
+    <span class="tag">Ví dụ</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4>Mã</h4>
+        <pre class="vlog" style="font-size:11.5px">`<span class="kw">timescale</span> <span class="nu">1</span>ns / <span class="nu">100</span>fs
+
+<span class="kw">module</span> adder4bit_tb;
+  <span class="cm">// stim rộng hơn số bit đầu vào đúng 1 bit</span>
+  <span class="cm">// để vòng lặp for kết thúc được</span>
+  <span class="ty">reg</span>  [<span class="nu">9</span>:<span class="nu">0</span>] stim;
+  <span class="ty">wire</span> [<span class="nu">3</span>:<span class="nu">0</span>] s;
+  <span class="ty">wire</span>       co;
+
+  adder4bit adder4bit_DUT (
+    .sum(s), .c_out(co),
+    .a(stim[<span class="nu">8</span>:<span class="nu">5</span>]), .b(stim[<span class="nu">4</span>:<span class="nu">1</span>]), .c(stim[<span class="nu">0</span>]));
+
+  <span class="kw">initial begin</span>
+    <span class="kw">for</span> (stim = <span class="nu">0</span>; stim &lt; <span class="nu">512</span>; stim = stim + <span class="nu">1</span>)
+      #<span class="nu">10</span>;
+    #<span class="nu">10</span> $stop;
+  <span class="kw">end</span>
+<span class="kw">endmodule</span></pre>
+      </div>
+      <div class="callout warn"><div class="lbl">Vì sao stim phải rộng 10 bit</div>
+        <p class="sub">Mạch chỉ có 9 đầu vào nên 512 tổ hợp là đủ. Nhưng nếu khai báo <span class="k">stim</span>
+          rộng đúng 9 bit thì sau tổ hợp 511, phép <span class="k">stim + 1</span> tràn về 0, điều kiện
+          <span class="k">stim &lt; 512</span> luôn đúng và vòng lặp <strong>không bao giờ kết thúc</strong>.
+          Thêm một bit dự phòng là cách xử lý đơn giản nhất.</p></div>
+    </div>
+    <div class="col">
+      <div class="card"><h4>Mô phỏng vét cạn — exhaustive simulation</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:34%">Tính chất</th><th>Nội dung</th></tr></thead><tbody>
+          <tr><td>Đảm bảo</td><td>Chắc chắn phát hiện được mọi lỗi chức năng của mạch tổ hợp</td></tr>
+          <tr><td>Số vector</td><td class="mono">2ⁿ với n là số bit đầu vào</td></tr>
+          <tr><td>Phạm vi dùng</td><td>Chỉ các mạch nhỏ, khoảng n ≤ 20</td></tr>
+          <tr class="hl"><td>Với mạch dãy</td><td>Không đủ: còn phải vét cạn cả không gian trạng thái</td></tr>
+        </tbody></table>
+        <p class="sub" style="margin-top:8px">Với bộ cộng 4 bit, 512 tổ hợp chạy trong vài phần nghìn giây. Với bộ
+          cộng 32 bit, số tổ hợp là 2⁶⁵ — vượt xa mọi khả năng tính toán, nên vét cạn không còn là một lựa chọn.</p>
+      </div>
+      <div class="card violet"><h4>Vét cạn từng phần</h4>
+        <p class="sub">Khi không vét cạn được toàn mạch, vẫn nên vét cạn <strong>từng khối con</strong>. Bộ cộng 32
+          bit dựng từ tám khối 4 bit: vét cạn từng khối 4 bit rồi kiểm tra riêng đường bit nhớ giữa các khối cho độ
+          tin cậy cao hơn nhiều so với việc chạy ngẫu nhiên trên toàn bộ 32 bit.</p>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Số vector theo độ rộng đầu vào</h4>
+        <table class="tt" style="margin-top:6px"><thead><tr>
+          <th>n (bit)</th><th>8</th><th>16</th><th>24</th><th>32</th><th>64</th></tr></thead><tbody>
+          <tr><td>số vector</td><td>256</td><td>65 536</td><td>1,7·10⁷</td><td>4,3·10⁹</td><td>1,8·10¹⁹</td></tr>
+          <tr><td>ở 10 ns/vector</td><td>2,6 µs</td><td>0,66 ms</td><td>0,17 s</td><td>43 s</td><td>5 800 năm</td></tr>
+        </tbody></table>
+        <p class="sub" style="margin-top:8px">Các con số trên là thời gian <em>mô phỏng</em>. Thời gian thực tế trên
+          máy còn lớn hơn nhiều lần vì mỗi vector cần hàng nghìn phép tính của bộ mô phỏng.
+          <span class="assum model">mô hình minh hoạ</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 18. NGẪU NHIÊN VÀ KỊCH BẢN ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Ngẫu nhiên và theo kịch bản">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Phương pháp 2 và 3</div><h2>Sinh ngẫu nhiên và dựng theo kịch bản hoạt động</h2></div>
+    <span class="tag">Testbench</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--violet)">
+        <h4><span class="n">2</span>Sinh tổ hợp đầu vào ngẫu nhiên</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">initial begin</span>
+  stim = $random(<span class="nu">2024</span>);   <span class="cm">// seed cố định</span>
+  <span class="kw">repeat</span> (<span class="nu">1000</span>) <span class="kw">begin</span>
+    #<span class="nu">10</span> stim = $random;
+  <span class="kw">end</span>
+  #<span class="nu">10</span> $stop;
+<span class="kw">end</span></pre>
+        <ul class="tick" style="margin-top:9px">
+          <li>Truyền <em>seed</em> cố định ở lần gọi đầu để mọi lần chạy sinh ra cùng một chuỗi — điều kiện bắt buộc
+            để tái hiện lại một lỗi đã tìm thấy.</li>
+          <li>Không truyền seed thì seed lấy từ đồng hồ hệ thống, mỗi lần chạy cho chuỗi khác nhau.</li>
+          <li>Không phát hiện được mọi lỗi, và <strong>dễ bỏ sót các trường hợp tới hạn</strong>: xác suất một chuỗi
+            ngẫu nhiên 32 bit rơi đúng vào giá trị biên là rất nhỏ.</li>
+        </ul>
+        <div class="callout warn" style="margin-top:9px"><div class="lbl">Cách khắc phục thông dụng</div>
+          <p class="sub">Ràng buộc miền giá trị ngẫu nhiên (<em>constrained random</em>): sinh ngẫu nhiên nhưng ép
+            phân bố tập trung quanh các giá trị biên như 0, giá trị lớn nhất, và các điểm tràn. Đây là kỹ thuật nền
+            tảng của SystemVerilog và UVM.</p></div>
+        <p class="sub" style="margin-top:8px"><strong>Bài tập:</strong> viết lại testbench của ví dụ 4.2.1 dùng
+          <span class="k">$random</span> và so sánh số lỗi tìm được với cách vét cạn.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--teal)">
+        <h4><span class="n">3</span>Dựng đầu vào từ kịch bản hoạt động</h4>
+        <ul class="tick">
+          <li>Liệt kê các trường hợp hoạt động <strong>tới hạn</strong> của mạch — chính là bảng trường hợp hoạt động
+            đã học ở buổi 1.</li>
+          <li>Cặp đầu vào và đầu ra chuẩn tương ứng có thể đọc ra từ tệp, cho phép sinh chúng bằng phần mềm ở ngôn ngữ
+            bậc cao.</li>
+          <li>Mỗi mạch có danh sách trường hợp tới hạn riêng, không có mẫu chung.</li>
+        </ul>
+      </div>
+      <div class="card acc"><h4>Verification Plan</h4>
+        <p class="sub">Danh sách trường hợp tới hạn được xác định trong bước <strong>lập kế hoạch kiểm chứng</strong>,
+          tiến hành <em>đồng thời</em> với bước thiết kế kiến trúc chứ không phải sau khi viết xong RTL.
+          Phân tích kịch bản hoạt động của mạch chính là phân rã chức năng của mạch — cùng một công việc, nhìn từ hai
+          phía.</p>
+        <p class="sub" style="margin-top:7px">Kế hoạch kiểm chứng do kỹ sư kiểm chứng viết, độc lập với người viết
+          RTL, và được rà soát cùng lúc với bản đặc tả kiến trúc.</p>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Ba phương pháp phối hợp với nhau</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:30%">Giai đoạn</th><th>Phương pháp chính</th></tr></thead><tbody>
+          <tr><td>Kiểm tra khối nhỏ</td><td>Vét cạn nếu n đủ nhỏ</td></tr>
+          <tr><td>Kiểm tra chức năng</td><td>Theo kịch bản, bám sát kế hoạch kiểm chứng</td></tr>
+          <tr><td>Chạy hồi quy dài</td><td>Ngẫu nhiên có ràng buộc, đo bao phủ</td></tr>
+          <tr class="hl"><td>Sát tapeout</td><td>Ngẫu nhiên nhắm vào vùng bao phủ còn thiếu</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 19. COVERAGE ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Chỉ số bao phủ" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Đánh giá chất lượng</div><h2>Chỉ số bao phủ của tập vector đầu vào</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 320px">
+      <p class="sub">Chỉ số bao phủ trả lời câu hỏi: tập vector đang dùng đã <em>chạm tới</em> bao nhiêu phần của
+        thiết kế. Bao phủ cao không chứng minh mạch đúng, nhưng bao phủ thấp chứng minh việc kiểm tra chưa đủ.</p>
+      <div class="card" style="margin-top:9px"><h4>Bốn nhóm chỉ số</h4>
+        <table style="margin-top:5px"><tbody>
+          <tr><td style="width:44%"><strong>Bao phủ câu lệnh</strong></td><td>mỗi dòng mã đã chạy ít nhất một lần</td></tr>
+          <tr><td><strong>Bao phủ nhánh</strong></td><td>mỗi nhánh if/case đã đi qua</td></tr>
+          <tr><td><strong>Bao phủ điều kiện</strong></td><td>mỗi toán hạng con của biểu thức logic đã nhận cả 0 và 1</td></tr>
+          <tr class="hl"><td><strong>Bao phủ FSM</strong></td><td>mỗi trạng thái và mỗi bước chuyển đã xảy ra</td></tr>
+        </tbody></table>
+      </div>
+      <div class="slider" style="margin-top:11px">
+        <label>số vector chạy</label>
+        <input type="range" id="cvN" min="1" max="200" step="1" value="12">
+        <output id="cvNv">12</output>
+      </div>
+      <div class="row" id="cvPick" style="gap:6px;flex-wrap:wrap;margin-top:9px"></div>
+      <div class="callout" style="margin-top:9px"><div class="lbl">Bao phủ chức năng</div>
+        <p class="sub">Ba nhóm đầu đo trên <em>mã</em> nên tự động hoá được hoàn toàn. Bao phủ chức năng đo trên
+          <em>đặc tả</em> — mỗi mục trong kế hoạch kiểm chứng đã được kiểm tra hay chưa — nên phải do con người khai
+          báo. Đây là chỉ số quan trọng nhất và cũng tốn công nhất.</p></div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Mạch mẫu — phần đã được chạy tô xanh</h4>
+        <pre class="vlog" id="cvCode" style="font-size:11.5px"></pre>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:10px">
+        <h4>Bao phủ theo số vector</h4>
+        <svg id="cvSvg" viewBox="0 0 560 190" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="g3" style="gap:9px;margin-top:9px">
+        <div class="stat"><span class="l">BAO PHỦ CÂU LỆNH</span><span class="v" id="cvSt" style="font-size:18px">0 %</span></div>
+        <div class="stat"><span class="l">BAO PHỦ NHÁNH</span><span class="v" id="cvBr" style="font-size:18px">0 %</span></div>
+        <div class="stat"><span class="l">BAO PHỦ FSM</span><span class="v" id="cvFs" style="font-size:18px">0 %</span></div>
+      </div>
+      <p class="sub" id="cvNote" style="margin-top:8px"></p>
+    </div>
+  </div>
+</section>
+<!-- ══════════════ 20. QUAN SÁT THỦ CÔNG ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Quan sát đầu ra thủ công">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Thành phần 3, phương pháp 1</div><h2>Quan sát và so sánh đầu ra thủ công</h2></div>
+    <span class="tag">Testbench</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Ba hàm in giá trị và thời điểm chúng chạy</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:22%">Hàm</th><th style="width:30%">Chạy khi nào</th><th>Giá trị in ra</th></tr></thead><tbody>
+          <tr><td class="mono">$display</td><td>ngay khi được gọi</td>
+            <td>Giá trị tại vùng <em>active</em> — có thể là giá trị <strong>cũ</strong> của biến gán bằng
+              <span class="k">&lt;=</span></td></tr>
+          <tr class="hl"><td class="mono">$strobe</td><td>cuối bước thời gian</td>
+            <td>Giá trị <strong>đã ổn định</strong> của bước thời gian đó</td></tr>
+          <tr><td class="mono">$monitor</td><td>mỗi khi một tham số đổi</td>
+            <td>Giá trị đã ổn định; chỉ cần gọi một lần cho cả lần chạy</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--red)">
+        <h4>Ví dụ: cùng một đoạn mã, ba kết quả khác nhau</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">always</span> @(<span class="kw">posedge</span> clk) <span class="kw">begin</span>
+  q &lt;= d;                    <span class="cm">// ghi ở vùng NBA</span>
+  $display(<span class="nu">"display: q=%b"</span>, q);  <span class="cm">// giá trị CŨ</span>
+  $strobe (<span class="nu">"strobe : q=%b"</span>, q);  <span class="cm">// giá trị MỚI</span>
+<span class="kw">end</span></pre>
+        <pre class="vlog" style="font-size:11.5px;margin-top:8px"><span class="cm">// d = 1, q đang là 0, tại sườn lên đầu tiên:</span>
+display: q=0
+strobe : q=1</pre>
+        <p class="sub" style="margin-top:8px">Đây là nguồn nhầm lẫn kinh điển khi gỡ lỗi mạch dãy. Quy tắc thực hành:
+          dùng <span class="k">$strobe</span> hoặc <span class="k">$monitor</span> để quan sát thanh ghi, chỉ dùng
+          <span class="k">$display</span> khi cần in đúng thứ tự thực hiện của các lệnh.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card"><h4>Khi nào quan sát thủ công là hợp lý</h4>
+        <ul class="tick">
+          <li>Giai đoạn <strong>gỡ lỗi</strong>: cần nhìn thấy chi tiết diễn biến từng chu kỳ, không cần kết luận
+            PASS/FAIL.</li>
+          <li>Mạch rất nhỏ, số vector ít, đọc hết được bằng mắt trong vài phút.</li>
+          <li>Kiểm tra nhanh xem DUT có phản ứng gì không, trước khi đầu tư viết mô hình chuẩn.</li>
+        </ul>
+      </div>
+      <div class="card red"><h4>Vì sao không dùng cho kiểm chứng chính thức</h4>
+        <ul class="tick">
+          <li><strong>Dễ sai sót do người</strong>: đọc 500 dòng số hexa để tìm một dòng sai là việc mà con người làm
+            rất kém.</li>
+          <li><strong>Không tự động hoá được</strong>: mỗi lần đổi RTL lại phải đọc lại toàn bộ, nên không chạy được
+            hồi quy hằng đêm.</li>
+          <li><strong>Không đo được</strong>: không có con số PASS/FAIL để đưa vào báo cáo tiến độ.</li>
+        </ul>
+        <p class="sub" style="margin-top:8px">Vì vậy phương pháp này luôn được thay bằng testbench tự kiểm tra
+          (<em>self-checking</em>) ngay khi DUT bắt đầu chạy đúng ở mức cơ bản.</p>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Định dạng chuỗi — giống printf của C</h4>
+        <table class="tt" style="margin-top:6px"><thead><tr>
+          <th>%b</th><th>%d</th><th>%h</th><th>%o</th><th>%t</th><th>%s</th><th>%c</th><th>%m</th></tr></thead><tbody>
+          <tr><td>nhị phân</td><td>thập phân</td><td>hexa</td><td>bát phân</td><td>thời gian</td><td>chuỗi</td>
+            <td>ký tự</td><td>tên phân cấp</td></tr>
+        </tbody></table>
+        <p class="sub" style="margin-top:8px">Các biến thể <span class="k">$displayb</span>,
+          <span class="k">$strobeh</span>, <span class="k">$monitoro</span> đặt sẵn hệ đếm mặc định, dùng khi không
+          muốn viết mã định dạng cho từng tham số.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 21. TESTBENCH TỰ KIỂM TRA ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Testbench tự kiểm tra">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Thành phần 3, phương pháp 2 — cách 1</div><h2>Tính đầu ra đúng bằng mã Verilog trong testbench</h2></div>
+    <span class="tag">Testbench</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--green)">
+        <h4>Thêm khối tự kiểm tra vào ví dụ 4.2.1</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="cm">// quan sát đầu ra</span>
+<span class="kw">initial</span> $monitor(<span class="nu">"%t, a=%d, b=%d, ci=%b, s=%d, co=%b"</span>,
+  $time, stim[<span class="nu">8</span>:<span class="nu">5</span>], stim[<span class="nu">4</span>:<span class="nu">1</span>], stim[<span class="nu">0</span>], s, co);
+
+<span class="cm">// tự kiểm tra đầu ra</span>
+<span class="kw">always</span> @(stim, s, co) <span class="kw">begin</span>
+  <span class="kw">if</span> ({co, s} !== stim[<span class="nu">8</span>:<span class="nu">5</span>] + stim[<span class="nu">4</span>:<span class="nu">1</span>] + stim[<span class="nu">0</span>])
+    $display(<span class="nu">"FAIL: %t, a=%d, b=%d, ci=%b, s=%d, co=%b"</span>,
+      $time, stim[<span class="nu">8</span>:<span class="nu">5</span>], stim[<span class="nu">4</span>:<span class="nu">1</span>], stim[<span class="nu">0</span>], s, co);
+<span class="kw">end</span></pre>
+        <p class="sub" style="margin-top:8px">Vế phải <span class="k">stim[8:5] + stim[4:1] + stim[0]</span> chính là
+          <strong>mô hình chuẩn</strong>: nó mô tả lại chức năng cộng bằng toán tử <span class="k">+</span> của
+          Verilog, ở mức trừu tượng cao hơn hẳn so với mạch cộng bit nối bit trong DUT.</p>
+      </div>
+      <div class="callout warn"><div class="lbl">Dùng !== chứ không dùng !=</div>
+        <p class="sub">Toán tử <span class="k">!=</span> trả về <span class="k">x</span> khi một vế chứa
+          <span class="k">x</span> hoặc <span class="k">z</span>, và điều kiện <span class="k">if</span> coi
+          <span class="k">x</span> là sai — nghĩa là testbench sẽ <strong>im lặng bỏ qua</strong> đúng những trường
+          hợp DUT cho ra giá trị không xác định. Toán tử <span class="k">!==</span> so sánh cả bốn giá trị nên bắt
+          được lỗi này.</p></div>
+    </div>
+    <div class="col">
+      <div class="card acc"><h4>Nguyên lý nhân đôi trong kiểm chứng</h4>
+        <p class="sub">Testbench mô tả chức năng của mạch <strong>một lần nữa</strong>, độc lập với DUT. Nếu cả hai
+          mô tả cho cùng kết quả trên mọi vector, xác suất cả hai cùng sai theo đúng một kiểu là rất thấp.</p>
+        <ul class="tick" style="margin-top:8px">
+          <li>Mô hình chuẩn trong testbench <strong>không cần tổng hợp được</strong>, nên viết được bằng các cấu trúc
+            trừu tượng hơn nhiều: toán tử số học, mảng, vòng lặp, hàm. Mã ngắn hơn ⇒ xác suất sai thấp hơn.</li>
+          <li>Nên để <strong>hai kỹ sư khác nhau</strong> viết DUT và testbench. Hai người hiểu sai đặc tả theo cùng
+            một cách là chuyện hiếm; một người tự nhân đôi cách hiểu sai của mình là chuyện thường.</li>
+        </ul>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Ba mức chặt chẽ của khối kiểm tra</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:26%">Mức</th><th>Nội dung</th></tr></thead><tbody>
+          <tr><td><strong>In FAIL</strong></td><td>Chỉ báo ra màn hình. Dễ bị bỏ sót trong bản ghi dài.</td></tr>
+          <tr><td><strong>Đếm lỗi</strong></td><td>Cộng biến <span class="k">err_cnt</span>, cuối lần chạy in tổng kết
+            PASS hay FAIL kèm số lỗi.</td></tr>
+          <tr class="hl"><td><strong>Dừng ngay</strong></td><td>Gọi <span class="k">$stop</span> tại lỗi đầu tiên để
+            giữ nguyên trạng thái mạch cho việc gỡ lỗi.</td></tr>
+        </tbody></table>
+        <pre class="vlog" style="font-size:11.5px;margin-top:9px"><span class="ty">integer</span> err_cnt = <span class="nu">0</span>;
+<span class="cm">// … trong khối kiểm tra: err_cnt = err_cnt + 1;</span>
+
+<span class="kw">initial begin</span>
+  #<span class="nu">5000</span>;
+  <span class="kw">if</span> (err_cnt == <span class="nu">0</span>) $display(<span class="nu">"PASS"</span>);
+  <span class="kw">else</span> $display(<span class="nu">"FAIL: %0d loi"</span>, err_cnt);
+  $finish;
+<span class="kw">end</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 22. MÔ HÌNH CHUẨN NGOÀI ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Mô hình chuẩn bằng phần mềm ngoài">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Thành phần 3, phương pháp 2 — cách 2</div><h2>Tính đầu ra đúng bằng phần mềm ngoài</h2></div>
+    <span class="tag">Testbench</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <p>Với các khối xử lý tín hiệu, mã hoá hay số học dấu phẩy động, viết lại chức năng bằng Verilog trong testbench
+        là công việc lớn và dễ sai. Cách thông dụng hơn là dùng chính chương trình tham chiếu viết bằng C, C++,
+        Matlab hoặc Simulink — vốn đã có sẵn từ bước thiết kế thuật toán — để sinh ra cặp đầu vào và đầu ra chuẩn.</p>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Hai cách kết nối phần mềm với bộ mô phỏng</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:26%">Cách</th><th>Cơ chế</th><th style="width:24%">Đánh giá</th></tr></thead><tbody>
+          <tr class="hl"><td><strong>Qua tệp</strong></td>
+            <td>Phần mềm ghi mẫu đầu vào và đầu ra chuẩn vào tệp; testbench đọc tệp bằng
+              <span class="k">$readmemh</span> hoặc <span class="k">$fscanf</span>.</td>
+            <td>Đơn giản, không cần công cụ đặc biệt. Dùng cho phần lớn trường hợp.</td></tr>
+          <tr><td><strong>Qua giao diện</strong></td>
+            <td>PLI hoặc DPI gọi trực tiếp hàm C từ Verilog trong lúc mô phỏng; HIL nối bộ mô phỏng với phần cứng thật.</td>
+            <td>Cần thiết khi dữ liệu quá lớn để ghi tệp, hoặc khi cần vòng lặp phản hồi.</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card teal"><h4>Vai trò của tệp trong kết nối hai mức mô tả</h4>
+        <p class="sub">Tệp đóng vai trò giao diện giữa <strong>mức phần mềm</strong> mô tả thuật toán và
+          <strong>mức phần cứng</strong> mô tả triển khai RTL. Nhờ đó, khi thuật toán thay đổi, chỉ cần chạy lại
+          chương trình sinh tệp mà không phải sửa testbench.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Luồng dữ liệu qua tệp</h4>
+        <svg viewBox="0 0 470 250" style="width:100%;height:auto">
+          <rect x="20" y="26" width="128" height="56" rx="7" fill="var(--violet-soft)" stroke="var(--violet)" stroke-width="1.8"/>
+          <text x="84" y="50" font-size="11.5" text-anchor="middle" class="lbl">Mô hình thuật toán</text>
+          <text x="84" y="66" font-size="9" text-anchor="middle" fill="var(--violet)">C / C++ / Matlab</text>
+          <rect x="180" y="16" width="112" height="38" rx="6" fill="var(--surface2)" stroke="var(--line)" stroke-width="1.5"/>
+          <text x="236" y="34" font-size="10.5" text-anchor="middle" class="lbl">stimulus.txt</text>
+          <text x="236" y="47" font-size="8.5" text-anchor="middle" fill="var(--muted)">mẫu đầu vào</text>
+          <rect x="180" y="66" width="112" height="38" rx="6" fill="var(--surface2)" stroke="var(--line)" stroke-width="1.5"/>
+          <text x="236" y="84" font-size="10.5" text-anchor="middle" class="lbl">golden.txt</text>
+          <text x="236" y="97" font-size="8.5" text-anchor="middle" fill="var(--muted)">đầu ra chuẩn</text>
+          <rect x="324" y="26" width="126" height="56" rx="7" fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="1.8"/>
+          <text x="387" y="50" font-size="11.5" text-anchor="middle" class="lbl">Testbench</text>
+          <text x="387" y="66" font-size="9" text-anchor="middle" fill="var(--acc)">$readmemh</text>
+          <rect x="324" y="132" width="126" height="52" rx="7" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="1.8"/>
+          <text x="387" y="154" font-size="11.5" text-anchor="middle" class="lbl">DUT</text>
+          <text x="387" y="170" font-size="9" text-anchor="middle" fill="var(--teal)">mô tả RTL</text>
+          <rect x="180" y="132" width="112" height="52" rx="7" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.8"/>
+          <text x="236" y="154" font-size="11" text-anchor="middle" class="lbl">So sánh</text>
+          <text x="236" y="170" font-size="9" text-anchor="middle" fill="var(--green)">PASS / FAIL</text>
+          <!-- dây nối, mọi đầu mút trên cạnh khối -->
+          <path d="M148 42 H164 V35 H180" fill="none" stroke="var(--violet)" stroke-width="2"/>
+          <path d="M180 35 l-9 -4 v8 z" fill="var(--violet)"/>
+          <path d="M148 66 H164 V85 H180" fill="none" stroke="var(--violet)" stroke-width="2"/>
+          <path d="M180 85 l-9 -4 v8 z" fill="var(--violet)"/>
+          <path d="M292 35 H308 V42 H324" fill="none" stroke="var(--acc)" stroke-width="2"/>
+          <path d="M324 42 l-9 -4 v8 z" fill="var(--acc)"/>
+          <path d="M292 85 H308 V66 H324" fill="none" stroke="var(--acc)" stroke-width="2"/>
+          <path d="M324 66 l-9 -4 v8 z" fill="var(--acc)"/>
+          <path d="M387 82 V132" fill="none" stroke="var(--acc)" stroke-width="2"/>
+          <path d="M387 132 l-4 9 h8 z" fill="var(--acc)"/>
+          <text x="396" y="112" font-size="8.5" fill="var(--acc)">stimulus</text>
+          <path d="M324 158 H292" fill="none" stroke="var(--teal)" stroke-width="2"/>
+          <path d="M292 158 l9 -4 v8 z" fill="var(--teal)"/>
+          <path d="M236 132 V110 H460 V66" fill="none" stroke="var(--muted)" stroke-width="1.6" stroke-dasharray="5 3"/>
+          <path d="M460 66 l-4 9 h8 z" fill="var(--muted)"/>
+          <text x="348" y="106" font-size="8.5" text-anchor="middle" fill="var(--muted)">đầu ra chuẩn để so sánh</text>
+          <text x="235" y="216" font-size="9.5" text-anchor="middle" fill="var(--muted)">tệp là giao diện giữa mức thuật toán và mức RTL</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 23. SINH XUNG NHỊP ══════════════ -->
+<section class="slide" data-sec="Testbench" data-title="Sinh tín hiệu xung nhịp" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.2.3 · Thành phần 4</div><h2>Bốn cách sinh tín hiệu xung nhịp</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 330px">
+      <div class="row" id="ckPick" style="gap:6px;flex-wrap:wrap"></div>
+      <pre class="vlog" id="ckCode" style="font-size:12px;margin-top:9px"></pre>
+      <div class="g2" style="gap:8px;margin-top:9px">
+        <div class="stat"><span class="l">CHU KỲ</span><span class="v" id="ckPer" style="font-size:18px">10 ns</span></div>
+        <div class="stat"><span class="l">TẦN SỐ</span><span class="v" id="ckFrq" style="font-size:18px">100 MHz</span></div>
+      </div>
+      <div class="callout" id="ckNote" style="margin-top:9px"><div class="lbl">Nhận xét</div>
+        <p class="sub" id="ckNoteT"></p></div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Dạng sóng sinh ra</h4>
+        <svg id="ckSvg" viewBox="0 0 560 160" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="g2" style="gap:12px;margin-top:10px">
+        <div class="card acc"><h4>Vì sao phải có initial đặt giá trị ban đầu</h4>
+          <p class="sub">Biến <span class="k">reg</span> khởi tạo bằng <span class="k">x</span>. Phép
+            <span class="k">clk = ~clk</span> trên giá trị <span class="k">x</span> vẫn cho
+            <span class="k">x</span>, nên nếu thiếu lệnh <span class="k">clk = 0</span> ban đầu thì xung nhịp
+            <strong>không bao giờ chạy</strong> và toàn bộ mô phỏng đứng im.</p></div>
+        <div class="card red"><h4>Lỗi hay gặp: chu kỳ tính sai một nửa</h4>
+          <p class="sub">Câu lệnh <span class="k">forever #5 clk = ~clk;</span> đảo mức sau mỗi 5 đơn vị, nên
+            <strong>nửa chu kỳ</strong> là 5 và chu kỳ đầy đủ là 10. Muốn xung nhịp 100 MHz với
+            <span class="k">`timescale 1ns/1ps</span> thì viết <span class="k">#5</span>, không phải
+            <span class="k">#10</span>.</p></div>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:10px">
+        <h4>Đặt xung nhịp trong testbench thực tế</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">parameter</span> CLK_PER = <span class="nu">10</span>;   <span class="cm">// ns — sửa một chỗ, đổi cả testbench</span>
+
+<span class="kw">initial begin</span>
+  clk = <span class="nu">1'b0</span>;
+  <span class="kw">forever</span> #(CLK_PER/<span class="nu">2</span>) clk = ~clk;
+<span class="kw">end</span>
+
+<span class="cm">// reset bất đồng bộ, nhả đồng bộ với sườn xuống</span>
+<span class="kw">initial begin</span>
+  rst_n = <span class="nu">1'b0</span>;
+  <span class="kw">repeat</span> (<span class="nu">3</span>) @(<span class="kw">negedge</span> clk);
+  rst_n = <span class="nu">1'b1</span>;
+<span class="kw">end</span></pre>
+        <p class="sub" style="margin-top:8px">Nhả tín hiệu reset tại <strong>sườn xuống</strong> để nó cách xa sườn
+          bắt của flip-flop, tránh vi phạm thời gian phục hồi và tránh đua tín hiệu giữa reset và xung nhịp trong
+          mô phỏng.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ══════════════ 24. BỐN LỆNH LẶP ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="Bốn lệnh lặp" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.3.1 · Các lệnh lặp</div><h2>for, while, repeat và forever</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 300px">
+      <div class="row" id="lpPick" style="gap:6px;flex-wrap:wrap"></div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:9px">
+        <h4 style="margin:0 0 6px">Cú pháp</h4>
+        <pre class="vlog" id="lpSyn" style="font-size:11.5px;margin:0"></pre>
+      </div>
+      <div class="card" style="margin-top:9px"><h4 id="lpUse" style="margin:0 0 6px"></h4>
+        <p class="sub" id="lpDesc" style="margin:0"></p></div>
+      <div class="g2" style="gap:8px;margin-top:9px">
+        <div class="stat"><span class="l">SỐ LẦN LẶP</span><span class="v" id="lpN" style="font-size:18px">16</span></div>
+        <div class="stat"><span class="l">TỔNG HỢP ĐƯỢC</span><span class="v" id="lpSyn2" style="font-size:18px">có</span></div>
+      </div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4 id="lpExName">Ví dụ</h4>
+        <pre class="vlog" id="lpCode" style="font-size:11.5px"></pre>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:10px">
+        <h4>Diễn biến khi chạy</h4>
+        <svg id="lpSvg" viewBox="0 0 560 132" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="callout" id="lpNote" style="margin-top:9px"><div class="lbl">Điểm cần lưu ý</div>
+        <p class="sub" id="lpNoteT"></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 25. FORK JOIN ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="begin/end và fork/join" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.3.2 · Khối lệnh</div><h2>Khối tuần tự begin/end và khối song song fork/join</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 320px">
+      <div class="seg" id="fjPick" style="margin-bottom:10px"></div>
+      <pre class="vlog" id="fjCode" style="font-size:12px"></pre>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:9px;padding:10px 12px">
+        <h4 style="margin:0 0 6px">Thời điểm mỗi lệnh chạy</h4>
+        <table class="tt" style="margin:0"><thead><tr>
+          <th>Lệnh</th><th>t xảy ra</th></tr></thead><tbody id="fjRows"></tbody></table>
+      </div>
+      <div class="stat" style="margin-top:9px"><span class="l">TỔNG THỜI GIAN KHỐI LỆNH</span>
+        <span class="v" id="fjTot" style="font-size:19px">18</span></div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Trục thời gian mô phỏng</h4>
+        <svg id="fjSvg" viewBox="0 0 560 176" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="g2" style="gap:12px;margin-top:10px">
+        <div class="card acc"><h4>Quy tắc tính thời gian</h4>
+          <p class="sub">Trong <span class="k">begin/end</span>, mỗi trễ tính <strong>kể từ lệnh trước đó</strong> nên
+            các trễ cộng dồn. Trong <span class="k">fork/join</span>, mọi trễ tính <strong>kể từ lúc khối bắt
+            đầu</strong> nên chúng chạy song song; khối kết thúc khi lệnh chậm nhất xong.</p></div>
+        <div class="card teal"><h4>Ứng dụng điển hình</h4>
+          <p class="sub"><span class="k">fork/join</span> thích hợp để chờ hai sự kiện mà không biết cái nào đến
+            trước:</p>
+          <pre class="vlog" style="font-size:11px;margin-top:6px"><span class="kw">begin</span>
+  <span class="kw">fork</span>
+    @Aevent;
+    @Bevent;
+  <span class="kw">join</span>
+  areg = breg;
+<span class="kw">end</span></pre></div>
+      </div>
+      <div class="callout warn" style="margin-top:10px"><div class="lbl">fork/join có thể gây đua tín hiệu</div>
+        <p class="sub">Khi nhiều nhánh trong cùng một khối <span class="k">fork/join</span> gán giá trị cho
+          <strong>cùng một biến</strong> tại cùng thời điểm mô phỏng, thứ tự thực hiện không xác định và kết quả có
+          thể khác nhau giữa hai bộ mô phỏng. Quy tắc: mỗi nhánh chỉ được ghi vào biến của riêng nó.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 26. KHỐI CÓ TÊN VÀ DISABLE ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="Khối có tên và disable">
+  <div class="hd"><div><div class="eyebrow">4.3.2 · Đặt tên khối lệnh</div><h2>Khối lệnh có tên và lệnh disable</h2></div>
+    <span class="tag">Câu lệnh</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card"><h4>Ba việc làm được nhờ đặt tên khối lệnh</h4>
+        <ul class="tick">
+          <li>Khai báo <strong>biến địa phương</strong> bên trong khối, không lộ ra phạm vi module.</li>
+          <li>Truy cập biến địa phương đó từ bên ngoài bằng <strong>truy cập phân cấp</strong>:
+            <span class="k">tb.input_gen.i</span>.</li>
+          <li>Dừng khối bằng <span class="k">disable ten_khoi;</span> — tương đương
+            <span class="k">break</span> và <span class="k">continue</span> của C.</li>
+        </ul>
+        <div class="formula" style="margin-top:9px;font-size:14px">disable <em>block_name</em>;</div>
+      </div>
+      <div class="card acc"><h4>Mô phỏng break và continue</h4>
+        <table style="margin-top:5px"><tbody>
+          <tr><td style="width:34%"><strong>break</strong></td>
+            <td>Đặt tên cho khối <em>bao ngoài</em> vòng lặp rồi <span class="k">disable</span> tên đó.</td></tr>
+          <tr class="hl"><td><strong>continue</strong></td>
+            <td>Đặt tên cho khối <em>thân</em> vòng lặp rồi <span class="k">disable</span> tên đó — vòng lặp vẫn
+              chạy tiếp lần sau.</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Kết quả mô phỏng ví dụ 4.3.5</h4>
+        <pre class="vlog" style="font-size:11.5px">  5: Inside continue block a=2, b=1, i=0
+ 15: Inside continue block a=2, b=1, i=1
+ 45: Inside continue block a=3, b=1, i=4
+ 55: Inside continue block a=3, b=1, i=5</pre>
+        <p class="sub" style="margin-top:8px">Từ t = 20 tới t = 40, <span class="k">a</span> bằng 0 nên nhánh
+          <span class="k">disable continue</span> chạy và dòng <span class="k">$display</span> bị bỏ qua — đó là lý do
+          i = 2 và i = 3 không xuất hiện. Tại t = 60, <span class="k">a</span> bằng <span class="k">b</span> nên
+          <span class="k">disable break</span> kết thúc toàn bộ vòng lặp.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4>Ví dụ 4.3.5 — break và continue</h4>
+        <pre class="vlog" style="font-size:11px">`<span class="kw">timescale</span> <span class="nu">1</span>ns/<span class="nu">1</span>ns
+<span class="kw">module</span> test_disable();
+  <span class="ty">integer</span> a, b, i;
+  <span class="ty">reg</span> clk;
+
+  <span class="kw">initial begin</span> : <span class="ty">break</span>
+    <span class="kw">for</span> (i = <span class="nu">0</span>; i &lt; <span class="nu">20</span>; i = i + <span class="nu">1</span>) <span class="kw">begin</span> : <span class="ty">continue</span>
+      @(<span class="kw">posedge</span> clk);
+      <span class="kw">if</span> (a == <span class="nu">0</span>)          <span class="cm">// bỏ qua lần lặp này</span>
+        <span class="kw">disable</span> <span class="ty">continue</span>;
+      <span class="kw">if</span> (a == b)          <span class="cm">// thoát khỏi vòng lặp</span>
+        <span class="kw">disable</span> <span class="ty">break</span>;
+      $display(<span class="nu">"%t: Inside continue block a=%d,b=%d,i=%d"</span>,
+               $time, a, b, i);
+    <span class="kw">end</span>
+    $display(<span class="nu">"%t: Inside break block a=%d,b=%d,i=%d"</span>,
+             $time, a, b, i);
+  <span class="kw">end</span>
+
+  <span class="kw">initial begin</span>
+    a = <span class="nu">2</span>; b = <span class="nu">1</span>;
+    #<span class="nu">20</span> a = <span class="nu">0</span>;
+    #<span class="nu">20</span> a = <span class="nu">3</span>;
+    #<span class="nu">20</span> a = <span class="nu">1</span>;
+  <span class="kw">end</span>
+
+  <span class="kw">initial begin</span>
+    clk = <span class="nu">0</span>;
+    <span class="kw">forever</span> #<span class="nu">5</span> clk = ~clk;
+  <span class="kw">end</span>
+<span class="kw">endmodule</span></pre>
+      </div>
+      <div class="callout warn"><div class="lbl">Hai điểm cần cẩn thận</div>
+        <p class="sub"><span class="k">disable</span> trên một khối đang chờ sự kiện sẽ huỷ luôn việc chờ đó, nên
+          nếu dùng nhầm tên khối, tiến trình có thể bị treo vĩnh viễn. Ngoài ra, <span class="k">break</span> và
+          <span class="k">continue</span> ở ví dụ trên là <em>tên do người viết đặt</em>, không phải từ khoá của
+          Verilog — đặt tên như vậy chỉ để dễ đọc.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 27. VÀO RA TỆP — GHI ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="Vào ra tệp — mở và ghi">
+  <div class="hd"><div><div class="eyebrow">4.3.3 · Vào ra tệp</div><h2>Mở, đóng và ghi tệp</h2></div>
+    <span class="tag">Câu lệnh</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Nhóm hàm mở và đóng</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:30%">Hàm</th><th>Nội dung</th></tr></thead><tbody>
+          <tr><td class="mono">$fopen("f")</td>
+            <td>Mở tệp để ghi, trả về <em>handle</em> dùng cho các lệnh sau. Trả về <span class="k">0</span> nếu
+              không mở được.</td></tr>
+          <tr><td class="mono">$fopen("f", "r")</td>
+            <td>Mở tệp với chế độ chỉ định: <span class="k">r</span> đọc, <span class="k">w</span> ghi đè,
+              <span class="k">a</span> ghi thêm.</td></tr>
+          <tr class="hl"><td class="mono">$fclose(fd)</td>
+            <td>Đóng tệp. Bắt buộc gọi, nếu không dữ liệu còn trong bộ đệm có thể mất.</td></tr>
+          <tr><td class="mono">$ferror(fd, str)</td>
+            <td>Trả về mã lỗi và ghi mô tả lỗi vào chuỗi <span class="k">str</span>.</td></tr>
+        </tbody></table>
+        <pre class="vlog" style="font-size:11.5px;margin-top:9px"><span class="ty">integer</span> fd;
+<span class="kw">initial begin</span>
+  fd = $fopen(<span class="nu">"ket_qua.txt"</span>, <span class="nu">"w"</span>);
+  <span class="kw">if</span> (fd == <span class="nu">0</span>) <span class="kw">begin</span>
+    $display(<span class="nu">"Khong mo duoc tep"</span>);
+    $finish;
+  <span class="kw">end</span>
+  <span class="cm">// … ghi dữ liệu …</span>
+  $fclose(fd);
+<span class="kw">end</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Nhóm hàm ghi — bốn hàm song song với nhóm in ra màn hình</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:26%">Hàm</th><th style="width:28%">Thời điểm ghi</th><th>Khác biệt</th></tr></thead><tbody>
+          <tr><td class="mono">$fdisplay</td><td>ngay khi gọi</td><td>Thêm ký tự xuống dòng ở cuối</td></tr>
+          <tr><td class="mono">$fwrite</td><td>ngay khi gọi</td><td>Không thêm ký tự xuống dòng</td></tr>
+          <tr class="hl"><td class="mono">$fstrobe</td><td>cuối bước thời gian</td>
+            <td>Chờ mọi lệnh khác trong cùng thời điểm chạy xong rồi mới ghi</td></tr>
+          <tr><td class="mono">$fmonitor</td><td>khi tham số đổi</td><td>Tự ghi mỗi lần một tham số thay đổi</td></tr>
+        </tbody></table>
+        <pre class="vlog" style="font-size:11.5px;margin-top:9px">$fdisplay(fd, <span class="nu">"out=%b in=%b"</span>, out, in);</pre>
+      </div>
+      <div class="card violet"><h4>Vì sao $fstrobe cho kết quả khác $fdisplay</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">initial</span> #<span class="nu">1</span> <span class="kw">begin</span>
+  a = <span class="nu">1</span>; b = <span class="nu">0</span>;
+  $fstrobe(fd, a, b);
+  b = <span class="nu">1</span>;
+<span class="kw">end</span></pre>
+        <p class="sub" style="margin-top:8px">Đoạn mã trên ghi ra <strong>1 1</strong> chứ không phải
+          <strong>1 0</strong>: <span class="k">$fstrobe</span> chạy ở vùng monitor, tức sau khi
+          <span class="k">b = 1</span> đã thực hiện xong. Đây chính là hành vi mong muốn khi cần ghi lại trạng thái
+          ổn định của mạch tại mỗi chu kỳ.</p>
+      </div>
+      <div class="callout key"><div class="lbl">Dùng $fstrobe để tạo tệp so sánh</div>
+        <p class="sub">Cách làm thông dụng: mỗi sườn lên xung nhịp, dùng <span class="k">$fstrobe</span> ghi toàn bộ
+          đầu ra của DUT vào tệp. Sau khi sửa RTL, chạy lại và so sánh hai tệp bằng lệnh
+          <span class="k">diff</span> — phát hiện được ngay mọi thay đổi hành vi ngoài ý muốn.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 28. VÀO RA TỆP — ĐỌC ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="Vào ra tệp — đọc">
+  <div class="hd"><div><div class="eyebrow">4.3.3 · Vào ra tệp</div><h2>Bốn cách đọc dữ liệu từ tệp</h2></div>
+    <span class="tag">Câu lệnh</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Bốn hàm đọc và phạm vi dùng</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:28%">Hàm</th><th style="width:24%">Đơn vị đọc</th><th>Dùng khi</th></tr></thead><tbody>
+          <tr><td class="mono">$fgetc</td><td>một ký tự</td><td>Xử lý tệp văn bản theo từng ký tự; trả về
+            <span class="k">-1</span> khi hết tệp</td></tr>
+          <tr><td class="mono">$fgets</td><td>một dòng</td><td>Đọc từng dòng; trả về số byte đọc được, bằng 0 khi
+            hết tệp</td></tr>
+          <tr class="hl"><td class="mono">$fscanf</td><td>theo định dạng</td><td>Đọc trực tiếp vào biến theo mã định
+            dạng; trả về số trường khớp được</td></tr>
+          <tr><td class="mono">$readmemh<br>$readmemb</td><td>cả khối nhớ</td><td>Nạp thẳng vào mảng
+            <span class="k">reg</span>; cách gọn nhất cho testbench</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card acc"><h4>$readmemh — cú pháp và cấu trúc tệp</h4>
+        <pre class="vlog" style="font-size:11.5px">$readmemh(<span class="nu">"file"</span>, mem);
+$readmemh(<span class="nu">"file"</span>, mem, start_addr, finish_addr);</pre>
+        <p class="sub" style="margin-top:8px">Tệp chứa các giá trị hexa cách nhau bằng khoảng trắng hoặc xuống dòng.
+          Cho phép chú thích kiểu <span class="k">//</span> và <span class="k">/* */</span>, và cho phép chỉ định địa
+          chỉ bằng <span class="k">@</span> theo sau là địa chỉ hexa.</p>
+        <pre class="vlog" style="font-size:11.5px;margin-top:7px"><span class="cm">// noi dung tep constants.hex</span>
+@0000
+<span class="nu">0000 0001 0003 0007</span>
+@0010
+<span class="nu">00FF 01FF</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Ví dụ 4.3.9 — nạp nội dung ROM từ tệp</h4>
+        <pre class="vlog" style="font-size:11.5px"><span class="kw">module</span> rom (
+  <span class="kw">input</span>        clk,
+  <span class="kw">input</span>  [<span class="nu">7</span>:<span class="nu">0</span>] addr,
+  <span class="kw">output reg</span> [<span class="nu">15</span>:<span class="nu">0</span>] dout);
+
+  <span class="ty">reg</span> [<span class="nu">15</span>:<span class="nu">0</span>] mem [<span class="nu">0</span>:<span class="nu">255</span>];   <span class="cm">// ROM 256 × 16 bit</span>
+
+  <span class="kw">initial</span>
+    $readmemh(<span class="nu">"constants"</span>, mem);
+
+  <span class="kw">always</span> @(<span class="kw">negedge</span> clk)
+    dout &lt;= mem[addr];
+<span class="kw">endmodule</span></pre>
+        <p class="sub" style="margin-top:8px">Cách viết này <strong>tổng hợp được</strong> trên FPGA: công cụ nhận ra
+          mẫu và nạp nội dung tệp vào bộ nhớ khởi tạo của block RAM. Trên ASIC thì không — ROM ASIC phải sinh bằng
+          memory compiler.</p>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Ví dụ 4.3.7 — đọc từng dòng bằng $fgets</h4>
+        <pre class="vlog" style="font-size:11px"><span class="ty">integer</span> fd, err, idx, nbyte;
+<span class="ty">reg</span> [<span class="nu">256</span>*<span class="nu">8</span>:<span class="nu">1</span>] mem [<span class="nu">0</span>:<span class="nu">255</span>], line_buf;
+<span class="ty">reg</span> [<span class="nu">639</span>:<span class="nu">0</span>] err_str;
+
+<span class="kw">initial begin</span>
+  idx = <span class="nu">0</span>;
+  fd  = $fopen(<span class="nu">"text2.txt"</span>, <span class="nu">"r"</span>);
+  err = $ferror(fd, err_str);
+  <span class="kw">if</span> (err == <span class="nu">0</span>) <span class="kw">begin</span>
+    nbyte = $fgets(line_buf, fd);
+    <span class="kw">while</span> (nbyte &gt; <span class="nu">0</span>) <span class="kw">begin</span>
+      mem[idx] = line_buf;
+      $write(<span class="nu">"%s"</span>, mem[idx]);
+      idx = idx + <span class="nu">1</span>;
+      nbyte = $fgets(line_buf, fd);
+    <span class="kw">end</span>
+  <span class="kw">end</span>
+  <span class="kw">else</span> $display(<span class="nu">"Khong mo duoc text2.txt"</span>);
+  $fclose(fd);
+<span class="kw">end</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 29. VÍ DỤ TESTBENCH DÙNG TỆP ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="Ví dụ 4.3.10 — testbench dùng tệp">
+  <div class="hd"><div><div class="eyebrow">4.3.3 · Ví dụ 4.3.10</div><h2>Testbench tự kiểm tra đọc mẫu thử từ tệp</h2></div>
+    <span class="tag">Ví dụ</span></div>
+  <div class="body g2">
+    <div class="col">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4>Testbench cho bộ cộng CLA 16 bit</h4>
+        <pre class="vlog" style="font-size:10.5px"><span class="kw">module</span> CLA16_selft_tb();
+  <span class="ty">reg</span>  [<span class="nu">32</span>:<span class="nu">0</span>] stim;
+  <span class="ty">reg</span>  [<span class="nu">55</span>:<span class="nu">0</span>] inout_patterns [<span class="nu">0</span>:<span class="nu">10</span>];
+  <span class="ty">wire</span> [<span class="nu">15</span>:<span class="nu">0</span>] s;
+  <span class="ty">wire</span>        co;
+  <span class="ty">reg</span>  [<span class="nu">4</span>:<span class="nu">0</span>]  addr;
+
+  CLA16 cla16_dut (.a(stim[<span class="nu">15</span>:<span class="nu">0</span>]), .b(stim[<span class="nu">31</span>:<span class="nu">16</span>]),
+                   .ci(stim[<span class="nu">32</span>]), .s(s), .co(co));
+
+  <span class="cm">// nạp mẫu thử và đầu ra chuẩn từ tệp</span>
+  <span class="kw">initial begin</span> : input_gen
+    $readmemh(<span class="nu">"correct-outputs.txt"</span>, inout_patterns);
+    stim = <span class="nu">32'h0</span>;
+    <span class="kw">for</span> (addr = <span class="nu">0</span>; addr &lt; <span class="nu">11</span>; addr = addr + <span class="nu">1</span>) <span class="kw">begin</span>
+      stim = inout_patterns[addr][<span class="nu">32</span>:<span class="nu">0</span>];
+      #<span class="nu">5</span>;
+    <span class="kw">end</span>
+  <span class="kw">end</span>
+
+  <span class="cm">// tự kiểm tra đầu ra</span>
+  <span class="kw">always</span> @(stim) <span class="kw">begin</span> : output_selftest
+    <span class="kw">if</span> ((co !== inout_patterns[addr][<span class="nu">52</span>]) |
+        (s  !== inout_patterns[addr][<span class="nu">51</span>:<span class="nu">36</span>]))
+      $display(<span class="nu">"WRONG!!! %t: a=%h b=%h ci=%b s=%h co=%b"</span>,
+        $time, stim[<span class="nu">15</span>:<span class="nu">0</span>], stim[<span class="nu">31</span>:<span class="nu">16</span>], stim[<span class="nu">32</span>], s, co);
+  <span class="kw">end</span>
+<span class="kw">endmodule</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Cách sắp xếp bit trong tệp correct-outputs.txt</h4>
+        <svg viewBox="0 0 470 120" style="width:100%;height:auto">
+          <g id="bitSvg"></g>
+        </svg>
+        <p class="sub" style="margin-top:8px">Mỗi dòng của tệp là một số hexa 14 chữ số, chứa cả mẫu đầu vào lẫn đầu
+          ra chuẩn. Cách gói này giữ cho hai phần luôn khớp với nhau, tránh lỗi lệch dòng khi dùng hai tệp riêng.</p>
+      </div>
+      <div class="card"><h4>Ba ưu điểm của cách làm này</h4>
+        <ul class="tick">
+          <li>Mẫu thử tách khỏi mã testbench: đổi bộ mẫu không cần biên dịch lại.</li>
+          <li>Bộ mẫu do phần mềm ngoài sinh ra nên bao phủ được nhiều trường hợp mà viết tay không xuể.</li>
+          <li>Cùng một tệp dùng lại được cho nhiều kiến trúc: CLA, CRA, hay bộ cộng nối tiếp đều so với cùng một đầu ra
+            chuẩn.</li>
+        </ul>
+      </div>
+      <div class="callout warn"><div class="lbl">Điểm dễ sai trong ví dụ</div>
+        <p class="sub">Khối <span class="k">output_selftest</span> nhạy với <span class="k">stim</span> nên nó chạy
+          <em>ngay khi</em> <span class="k">stim</span> đổi, tại thời điểm mà đầu ra của DUT chưa kịp ổn định.
+          Cách sửa đúng là dời việc kiểm tra tới cuối mỗi bước 5 ns, ví dụ dùng
+          <span class="k">always @(stim) #4 begin … end</span> hoặc chuyển khối kiểm tra vào chính vòng lặp sinh
+          kích thích ngay trước lệnh <span class="k">#5</span>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 30. FORCE RELEASE ══════════════ -->
+<section class="slide" data-sec="Câu lệnh testbench" data-title="force và release" data-int="1">
+  <div class="hd"><div><div class="eyebrow">4.3.4 · Đặt giá trị tín hiệu trong mạch</div><h2>force và release: ép giá trị tín hiệu sâu bên trong mạch</h2></div>
+    <span class="tag">Tương tác</span></div>
+  <div class="body row" style="gap:16px">
+    <div class="col" style="flex:0 0 318px">
+      <div class="formula" style="font-size:14px">force <em>signal</em> = <em>value</em>;<br>release <em>signal</em>;</div>
+      <div class="card" style="margin-top:9px"><h4>Bốn công dụng</h4>
+        <ul class="tick">
+          <li>Đưa mạch tới một trạng thái xác định rồi bắt đầu mô phỏng từ đó.</li>
+          <li>Kiểm tra mạch dãy <strong>sâu</strong> — loại cần rất nhiều chu kỳ mới tới được một trạng thái nào đó.</li>
+          <li>Kiểm tra các bước chuyển trạng thái và đầu ra tương ứng từ một trạng thái cụ thể.</li>
+          <li>Tạm thời loại bỏ một khối để cô lập lỗi khi gỡ rối.</li>
+        </ul>
+      </div>
+      <div class="card red" style="margin-top:9px"><h4>Chỉ dùng trong testbench</h4>
+        <p class="sub"><span class="k">force</span> không có tương ứng trong phần cứng thật và không tổng hợp được.
+          Nó cũng che mất hành vi thật của mạch, nên một testbench chỉ dựa vào <span class="k">force</span> có thể
+          báo PASS trên một mạch không bao giờ tự tới được trạng thái đó.</p></div>
+      <div class="row" id="frPick" style="gap:6px;flex-wrap:wrap;margin-top:9px"></div>
+    </div>
+    <div class="col" style="flex:1 1 auto">
+      <div class="g2" style="gap:12px">
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Bộ đếm Gray — DUT</h4>
+          <pre class="vlog" style="font-size:11px"><span class="kw">module</span> gray_counter (
+  <span class="kw">input</span> clk, rst_n,
+  <span class="kw">output</span> [<span class="nu">3</span>:<span class="nu">0</span>] cnt);
+
+  <span class="ty">reg</span> [<span class="nu">3</span>:<span class="nu">0</span>] state;
+
+  <span class="kw">always</span> @(<span class="kw">posedge</span> clk)
+    <span class="kw">if</span> (~rst_n) state &lt;= <span class="nu">4'b0000</span>;
+    <span class="kw">else</span>       state &lt;= state + <span class="nu">1</span>;
+
+  <span class="kw">assign</span> cnt = state ^ {<span class="nu">1'b0</span>, state[<span class="nu">3</span>:<span class="nu">1</span>]};
+<span class="kw">endmodule</span></pre>
+        </div>
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Testbench dùng force/release</h4>
+          <pre class="vlog" style="font-size:11px"><span class="kw">initial</span> $monitor(<span class="nu">"%t out:%b rst_n:%b state:%b"</span>,
+  $time, out, rst_n, GC.state);   <span class="cm">// truy cập phân cấp</span>
+
+<span class="kw">initial begin</span>
+  rst_n = <span class="nu">1</span>; #<span class="nu">10</span> rst_n = <span class="nu">0</span>;
+  #<span class="nu">90</span> rst_n = <span class="nu">1</span>;
+  <span class="kw">force</span> GC.state = <span class="nu">4'b0001</span>;
+  #<span class="nu">10</span> <span class="kw">release</span> GC.state;
+  #<span class="nu">10</span> <span class="kw">force</span> GC.state = <span class="nu">4'b0010</span>;
+  #<span class="nu">10</span> <span class="kw">release</span> GC.state;
+  <span class="cm">// … lặp lại cho 16 trạng thái …</span>
+<span class="kw">end</span></pre>
+        </div>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line);margin-top:10px">
+        <h4 id="frName">Diễn biến của state và cnt</h4>
+        <svg id="frSvg" viewBox="0 0 560 176" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="callout" id="frNote" style="margin-top:9px"><div class="lbl">Nhận xét</div>
+        <p class="sub" id="frNoteT"></p></div>
+    </div>
+  </div>
+</section>
+<!-- ══════════════ 31. HÀM HỆ THỐNG ══════════════ -->
+<section class="slide" data-sec="Hàm hệ thống" data-title="Bảng tra hàm hệ thống">
+  <div class="hd"><div><div class="eyebrow">4.4 · Một số hàm hệ thống trong Verilog</div><h2>Bảng tra các hàm hệ thống dùng trong testbench</h2></div>
+    <span class="tag">Tra cứu</span></div>
+  <div class="body">
+    <div class="g2" style="gap:18px">
+      <div class="col">
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Điều khiển tiến trình mô phỏng</h4>
+          <table style="margin-top:6px"><thead><tr>
+            <th style="width:26%">Hàm</th><th>Tác dụng</th></tr></thead><tbody>
+            <tr><td class="mono">$stop</td><td>Dừng mô phỏng, vào chế độ giao tiếp lệnh với người dùng để theo dõi
+              tín hiệu và gỡ lỗi. Mô phỏng <strong>tiếp tục được</strong>.</td></tr>
+            <tr class="hl"><td class="mono">$finish</td><td>Kết thúc chương trình mô phỏng, quay về hệ điều hành.
+              Không quay lại được.</td></tr>
+            <tr><td class="mono">$reset</td><td>Đặt lại thời gian mô phỏng về 0.</td></tr>
+          </tbody></table>
+          <p class="sub" style="margin-top:8px">Quy tắc thực hành: dùng <span class="k">$stop</span> khi đang gỡ lỗi
+            thủ công, dùng <span class="k">$finish</span> trong các lần chạy hồi quy tự động vì chỉ có
+            <span class="k">$finish</span> mới trả quyền điều khiển về cho tập lệnh chạy tự động.</p>
+        </div>
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Thời gian mô phỏng</h4>
+          <table style="margin-top:6px"><thead><tr>
+            <th style="width:26%">Hàm</th><th>Kiểu trả về</th></tr></thead><tbody>
+            <tr><td class="mono">$time</td><td>Số nguyên 64 bit, làm tròn theo đơn vị thời gian của module gọi</td></tr>
+            <tr><td class="mono">$stime</td><td>Số nguyên 32 bit — tràn sau khoảng 4,3·10⁹ đơn vị</td></tr>
+            <tr class="hl"><td class="mono">$realtime</td><td>Số thực, giữ nguyên phần lẻ nên phản ánh đúng độ phân
+              giải</td></tr>
+          </tbody></table>
+          <p class="sub" style="margin-top:8px">Khi <span class="k">timescale</span> là
+            <span class="k">1ns/100ps</span>, một sự kiện tại 2,5 ns được <span class="k">$time</span> in ra là
+            <span class="k">3</span> nhưng <span class="k">$realtime</span> in ra <span class="k">2.5</span>.
+            Dùng <span class="k">$realtime</span> khi cần đo khoảng thời gian chính xác.</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Sinh số ngẫu nhiên</h4>
+          <div class="formula" style="font-size:13.5px;margin-top:4px">$random<br>$random(<em>seed</em>)</div>
+          <ul class="tick" style="margin-top:8px">
+            <li>Trả về một số nguyên <strong>có dấu</strong> 32 bit ngẫu nhiên mỗi lần gọi. Muốn giá trị không dấu
+              trong một dải, dùng phép chia lấy dư trên phần trị tuyệt đối.</li>
+            <li>Truyền <em>seed</em> ở lần gọi đầu tiên thì các lần chạy với cùng seed cho <strong>cùng một
+              chuỗi</strong> — điều kiện bắt buộc để tái hiện lỗi.</li>
+            <li>Không truyền seed thì seed lấy từ đồng hồ hệ thống, mỗi lần chạy khác nhau.</li>
+          </ul>
+          <pre class="vlog" style="font-size:11.5px;margin-top:8px"><span class="ty">integer</span> seed = <span class="nu">2024</span>;
+<span class="cm">// giá trị ngẫu nhiên trong dải 0…99</span>
+val = {$random(seed)} % <span class="nu">100</span>;</pre>
+        </div>
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Ghi tệp waveform VCD</h4>
+          <table style="margin-top:6px"><thead><tr>
+            <th style="width:34%">Hàm</th><th>Tác dụng</th></tr></thead><tbody>
+            <tr><td class="mono">$dumpfile("f.vcd")</td><td>Đặt tên tệp chứa giá trị các biến</td></tr>
+            <tr><td class="mono">$dumpvars</td><td>Ghi giá trị toàn bộ biến trong thiết kế</td></tr>
+            <tr class="hl"><td class="mono">$dumpvars(n, top)</td><td>Ghi các biến trong module <span class="k">top</span>
+              và n−1 mức module con phía dưới; <span class="k">n = 0</span> nghĩa là toàn bộ cây</td></tr>
+            <tr><td class="mono">$dumpon / $dumpoff</td><td>Bắt đầu và ngừng ghi</td></tr>
+            <tr><td class="mono">$dumpall</td><td>Ghi ngay giá trị hiện tại của mọi biến đang theo dõi</td></tr>
+          </tbody></table>
+          <pre class="vlog" style="font-size:11.5px;margin-top:8px"><span class="kw">initial begin</span>
+  $dumpfile(<span class="nu">"adder4bit_tb.vcd"</span>);
+  $dumpvars(<span class="nu">0</span>, adder4bit_tb);
+<span class="kw">end</span></pre>
+        </div>
+        <div class="callout warn"><div class="lbl">Các hàm hệ thống không mô tả mạch</div>
+          <p class="sub">Toàn bộ nhóm hàm trên không dùng để mô tả mạch mà chỉ phục vụ việc gỡ lỗi và kiểm chứng khi
+            mô phỏng. Chúng không tổng hợp được và chỉ được xuất hiện trong testbench.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 32. VCD VÀ QUY MÔ TỆP ══════════════ -->
+<section class="slide" data-sec="Hàm hệ thống" data-title="Tệp VCD">
+  <div class="hd"><div><div class="eyebrow">4.4 · Ghi waveform</div><h2>Tệp VCD: cấu trúc, quy mô và cách dùng hợp lý</h2></div>
+    <span class="tag">Thực hành</span></div>
+  <div class="body g2a">
+    <div class="col">
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Cấu trúc một tệp VCD</h4>
+        <pre class="vlog" style="font-size:11.5px">$date November 27, 2026 $end
+$timescale 1ns $end
+$scope module adder4bit_tb $end
+$var wire 4 ! s [3:0] $end
+$var wire 1 " co $end
+$var reg  9 # stim [8:0] $end
+$upscope $end
+$enddefinitions $end
+#0
+b000000000 #
+b0000 !
+0"
+#10
+b111100001 #
+b0000 !
+1"</pre>
+        <p class="sub" style="margin-top:8px">Phần đầu khai báo tên và độ rộng từng tín hiệu, gán cho mỗi tín hiệu một
+          <em>mã ngắn</em> gồm một hoặc vài ký tự. Phần thân chỉ ghi lại các <strong>thay đổi</strong>, mỗi mốc thời
+          gian bắt đầu bằng dấu <span class="k">#</span>. Đây chính là lý do VCD lưu được dữ liệu dài mà vẫn đọc
+          nhanh: nó là bản ghi sự kiện chứ không phải bảng giá trị theo từng chu kỳ.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card red"><h4>VCD phình rất nhanh</h4>
+        <p class="sub">Kích thước tệp tỉ lệ với <strong>số lần đổi giá trị</strong>, không phải với số tín hiệu. Một
+          thiết kế cỡ vừa chạy vài trăm nghìn chu kỳ với <span class="k">$dumpvars(0, tb)</span> dễ dàng sinh ra tệp
+          hàng chục gigabyte, và bản thân việc ghi tệp làm mô phỏng chậm nhiều lần.</p>
+      </div>
+      <div class="card plain" style="border:1px solid var(--line)">
+        <h4>Ba cách kiểm soát</h4>
+        <table style="margin-top:6px"><thead><tr>
+          <th style="width:34%">Cách</th><th>Mã</th></tr></thead><tbody>
+          <tr><td>Giới hạn phạm vi cây phân cấp</td>
+            <td class="mono">$dumpvars(1, tb.dut.ctrl);</td></tr>
+          <tr class="hl"><td>Chỉ ghi trong cửa sổ thời gian quan tâm</td>
+            <td class="mono">initial begin<br>&nbsp;&nbsp;$dumpoff;<br>&nbsp;&nbsp;#9000 $dumpon;<br>&nbsp;&nbsp;#1000 $dumpoff;<br>end</td></tr>
+          <tr><td>Dùng định dạng nén riêng của công cụ</td>
+            <td class="mono">FSDB, SHM, WLF</td></tr>
+        </tbody></table>
+        <p class="sub" style="margin-top:8px">Định dạng nén riêng của từng công cụ nhỏ hơn VCD khoảng một bậc độ lớn
+          nhưng chỉ đọc được bằng công cụ tương ứng. VCD là định dạng chuẩn IEEE, mở được bằng mọi phần mềm xem
+          waveform kể cả các công cụ mã nguồn mở như GTKWave.</p>
+      </div>
+      <div class="callout key"><div class="lbl">Quy trình gỡ lỗi thông dụng</div>
+        <p class="sub">Chạy lần một <strong>không ghi waveform</strong>, chỉ để testbench tự kiểm tra và in ra thời
+          điểm lỗi đầu tiên. Chạy lần hai với <span class="k">$dumpon</span> mở đúng cửa sổ vài trăm chu kỳ quanh thời
+          điểm đó. Cách này giảm kích thước tệp và thời gian chạy xuống nhiều bậc so với việc ghi toàn bộ ngay từ đầu.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ 33. BÀI TẬP ══════════════ -->
+<section class="slide" data-sec="Tổng kết" data-title="Bài tập">
+  <div class="hd"><div><div class="eyebrow">Bài tập</div><h2>Bốn bài tập viết testbench</h2></div>
+    <span class="tag">Bài tập</span></div>
+  <div class="body">
+    <p class="lead">Mỗi bài nộp gồm mã testbench, bản ghi kết quả mô phỏng, và một đoạn nhận xét ngắn về những trường
+      hợp tới hạn đã kiểm tra. Dùng cùng bộ mã trong thư mục <span class="k">examples/09-testbench-va-mo-phong</span>
+      làm điểm xuất phát.</p>
+    <div class="g2" style="gap:16px;margin-top:8px">
+      <div class="card plain" style="border:1.6px solid var(--acc)">
+        <h4><span class="n">1</span>Testbench vét cạn cho bộ cộng 4 bit</h4>
+        <ul class="tick">
+          <li>Vét cạn toàn bộ 512 tổ hợp bằng vòng lặp <span class="k">for</span>.</li>
+          <li>Tự kiểm tra bằng biểu thức <span class="k">{co,s} !== a + b + ci</span>, đếm số lỗi.</li>
+          <li>Cuối lần chạy in ra <span class="k">PASS</span> hoặc <span class="k">FAIL: n lỗi</span> rồi
+            <span class="k">$finish</span>.</li>
+        </ul>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--violet)">
+        <h4><span class="n">2</span>So sánh CRA và CLA 16 bit</h4>
+        <ul class="tick">
+          <li>Một testbench, hai thực thể DUT chạy song song trên cùng tập kích thích.</li>
+          <li>So sánh đầu ra của hai kiến trúc với nhau và với mô hình chuẩn.</li>
+          <li>Dùng <span class="k">$random</span> có seed cố định, chạy 10 000 vector.</li>
+          <li>Thêm trễ cổng vào cả hai kiến trúc và so sánh thời điểm đầu ra ổn định.</li>
+        </ul>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--teal)">
+        <h4><span class="n">3</span>Testbench đọc mẫu thử từ tệp</h4>
+        <ul class="tick">
+          <li>Viết một chương trình ngắn bằng Python hoặc C sinh ra tệp gồm mẫu đầu vào và đầu ra chuẩn.</li>
+          <li>Testbench nạp tệp bằng <span class="k">$readmemh</span>, chạy và so sánh.</li>
+          <li>Bảo đảm việc so sánh xảy ra <strong>sau</strong> khi đầu ra DUT đã ổn định.</li>
+        </ul>
+      </div>
+      <div class="card plain" style="border:1.6px solid var(--amber)">
+        <h4><span class="n">4</span>Kiểm tra FSM đèn giao thông bằng force</h4>
+        <ul class="tick">
+          <li>Dùng <span class="k">force</span> đưa FSM lần lượt tới từng trạng thái, kiểm tra đầu ra tương ứng.</li>
+          <li>Sau đó <span class="k">release</span> và kiểm tra bước chuyển trạng thái kế tiếp.</li>
+          <li>Đo bao phủ trạng thái và bao phủ bước chuyển; báo cáo bước chuyển nào chưa được kiểm tra.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout key" style="margin-top:12px"><div class="lbl">Tiêu chí chấm</div>
+      <p>Testbench phải <strong>tự kết luận</strong> PASS hay FAIL chứ không để người chấm đọc waveform. Một testbench
+        báo PASS trên DUT có lỗi cố ý chèn vào sẽ không được tính điểm — hãy tự kiểm tra bằng cách đảo một điều kiện
+        trong DUT rồi xác nhận testbench bắt được.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════ 34. TỔNG KẾT ══════════════ -->
+<section class="slide" data-sec="Tổng kết" data-title="Nguồn tham khảo">
+  <div class="hd"><div><div class="eyebrow">Tổng kết</div><h2>Tóm tắt và tài liệu tham khảo</h2></div>
+    <span class="tag">Tổng kết</span></div>
+  <div class="body">
+    <div class="g2" style="gap:18px">
+      <div class="col">
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Mười điểm cần nhớ</h4>
+          <ol style="margin:6px 0 0 18px;padding:0;font-size:13.5px;line-height:1.75;color:var(--ink2)">
+            <li>Bộ mô phỏng chạy theo hàng đợi sự kiện: chỉ tính lại fanout của tín hiệu vừa đổi.</li>
+            <li>Thời gian mô phỏng <strong>nhảy</strong> giữa các sự kiện, không tăng đều.</li>
+            <li>Không viết trễ cổng trong mã thiết kế; chỉ dùng trễ trong testbench.</li>
+            <li><span class="k">c = #4 d;</span> đọc vế phải ngay, <span class="k">#4 c = d;</span> đọc sau khi chờ.</li>
+            <li>Trong cùng một bước thời gian, thứ tự vùng là active → inactive → NBA → monitor.</li>
+            <li>Testbench là module không cổng, không cần tổng hợp được.</li>
+            <li>Đầu vào DUT nối với <span class="k">reg</span>, đầu ra DUT nối với <span class="k">wire</span>.</li>
+            <li>So sánh đầu ra bằng <span class="k">!==</span> chứ không dùng <span class="k">!=</span>.</li>
+            <li>Bao phủ cao không chứng minh mạch đúng, nhưng bao phủ thấp chứng minh kiểm tra chưa đủ.</li>
+            <li><span class="k">force</span> tiện khi gỡ lỗi nhưng có thể che mất lỗi thật của mạch.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card plain" style="border:1px solid var(--line)">
+          <h4>Tài liệu tham khảo</h4>
+          <ol style="margin:6px 0 0 18px;padding:0;font-size:13px;line-height:1.72;color:var(--ink2)">
+            <li>IEEE Standard for Verilog Hardware Description Language, IEEE Std 1364-2005. New York, NY, USA: IEEE,
+              2006. — Điều 11 về vùng sự kiện, điều 17 về hàm hệ thống.</li>
+            <li>M. D. Ciletti, <em>Advanced Digital Design with the Verilog HDL</em>, 2nd ed. Upper Saddle River, NJ,
+              USA: Pearson, 2011.</li>
+            <li>J. Bergeron, <em>Writing Testbenches: Functional Verification of HDL Models</em>, 2nd ed. Boston, MA,
+              USA: Kluwer Academic, 2003.</li>
+            <li>S. Palnitkar, <em>Verilog HDL: A Guide to Digital Design and Synthesis</em>, 2nd ed. Upper Saddle
+              River, NJ, USA: Prentice Hall, 2003.</li>
+            <li>Wilson Research Group and Siemens EDA, <em>Functional Verification Study</em>, 2022.
+              <span class="assum src">có nguồn</span></li>
+          </ol>
+        </div>
+        <div class="card acc"><h4>Vị trí buổi học trong học phần</h4>
+          <table style="margin-top:5px"><tbody>
+            <tr><td style="width:26%" class="mono">Buổi 1</td><td>Mục tiêu học phần, ôn tập điện tử số, mô hình hoá
+              mạch số</td></tr>
+            <tr><td class="mono">Buổi 2</td><td>Cú pháp Verilog và mô tả mạch — chương 3</td></tr>
+            <tr class="hl"><td class="mono">Buổi 3</td><td>Mô phỏng và testbench — chương 4</td></tr>
+            <tr><td class="mono">Buổi 4</td><td>Tổng hợp logic — chương 5</td></tr>
+          </tbody></table>
+        </div>
+        <p class="sub" style="text-align:center;margin-top:10px">Biên soạn: PGS.TS. Nguyễn Đức Minh ·
+          Trường Điện – Điện tử, Đại học Bách khoa Hà Nội</p>
+      </div>
+    </div>
+  </div>
+</section>
+</div></div>
+
+<div id="bar" style="width:0%"></div>
+<div id="crumb">—</div>
+<div id="chrome">
+  <div id="counter">1 / 34</div>
+  <button id="btnPrev" title="Slide trước (←)">‹</button>
+  <button id="btnNext" title="Slide sau (→)">›</button>
+  <button id="btnOv" title="Mục lục (O)">▦</button>
+  <button id="btnTh" title="Nền tối (D)">◐</button>
+  <button id="btnFs" title="Toàn màn hình (F)">⤢</button>
+</div>
+
+<div id="ov">
+  <h3>Mục lục — Buổi 3: Mô phỏng và testbench</h3>
+  <p class="sub">Bấm vào một slide để chuyển tới. Nhấn <span class="kbd">Esc</span> hoặc <span class="kbd">O</span> để đóng.</p>
+  <div id="ovg"></div>
+</div>
+<script>
+"use strict";
+/* ════════════════════ TIỆN ÍCH CHUNG ════════════════════ */
+const $  = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const cv = n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const fmt=(v,d=0)=>v.toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+function el(tag,attrs={},kids=[]){
+  const n=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const k in attrs) n.setAttribute(k,attrs[k]);
+  kids.forEach(k=>n.appendChild(k)); return n;
+}
+function svgClear(s){ while(s.firstChild) s.removeChild(s.firstChild); }
+function S(tag,a={},text){ // returns markup string
+  let s='<'+tag; for(const k in a) s+=` ${k}="${a[k]}"`;
+  if(text===undefined) return s+'/>';
+  return s+'>'+text+'</'+tag+'>';
+}
+/* dạng sóng số: evts = [{t,v}] , trả về path d */
+function wavePath(evts,t2x,hi,lo,tEnd,sl=3){
+  if(!evts.length) return '';
+  let y=evts[0].v?hi:lo, d=`M${t2x(evts[0].t)} ${y}`;
+  for(let i=1;i<evts.length;i++){
+    const x=t2x(evts[i].t), ny=evts[i].v?hi:lo;
+    if(ny!==y){ d+=` L${(x-sl).toFixed(1)} ${y} L${(x+sl).toFixed(1)} ${ny}`; y=ny; }
+  }
+  d+=` L${t2x(tEnd)} ${y}`; return d;
+}
+function clkEvts(t0,per,n,duty=0.5){
+  const e=[{t:0,v:0}];
+  for(let i=0;i<n;i++){ e.push({t:t0+i*per,v:1}); e.push({t:t0+i*per+per*duty,v:0}); }
+  return e;
+}
+/* bus nhiều bit: vẽ hai đường bao chéo nhau */
+function busSeg(x1,x2,yT,yB,sl=4){
+  return `M${x1+sl} ${yT} L${x2-sl} ${yT} L${x2} ${(yT+yB)/2} L${x2-sl} ${yB} L${x1+sl} ${yB} L${x1} ${(yT+yB)/2} Z`;
+}
+
+/* ════════════════════ ENGINE TRÌNH CHIẾU ════════════════════ */
+const slides=$$('.slide'); let cur=0;
+const deck=$('#deck'), stage=$('#stage');
+function fit(){
+  const pad=26, w=stage.clientWidth-pad, h=stage.clientHeight-pad;
+  const s=Math.min(w/1280,h/720);
+  deck.style.transform=`scale(${s})`;
+  deck.style.width='1280px'; deck.style.height='720px';
+}
+/* tự co nội dung nếu slide bị tràn — giữ nguyên bố cục, chỉ thu nhỏ tỉ lệ */
+function autofit(s){
+  if(!s) return;
+  const b=s.querySelector('.body'); if(!b) return;
+  b.style.transformOrigin='top left'; b.style.transform=''; b.style.width='';
+  if(s.scrollHeight<=s.clientHeight+1) return;
+  for(let k=.98;k>=.52;k-=.02){
+    b.style.transform=`scale(${k.toFixed(2)})`; b.style.width=(100/k).toFixed(3)+'%';
+    if(s.scrollHeight<=s.clientHeight+1) return;
+  }
+}
+function go(i,push=true){
+  i=clamp(i,0,slides.length-1);
+  slides[cur].classList.remove('active');
+  cur=i; slides[cur].classList.add('active');
+  $('#counter').textContent=`${i+1} / ${slides.length}`;
+  $('#bar').style.width=((i+1)/slides.length*100)+'%';
+  $('#crumb').textContent=`${slides[i].dataset.sec} › ${slides[i].dataset.title}`;
+  if(push) history.replaceState(null,'','#'+(i+1));
+  window.dispatchEvent(new CustomEvent('slide',{detail:i}));
+  autofit(slides[cur]);
+}
+let afT=null;
+function afSoon(){ clearTimeout(afT); afT=setTimeout(()=>autofit(slides[cur]),90); }
+document.addEventListener('input',afSoon);
+document.addEventListener('click',afSoon);
+window.addEventListener('theme',afSoon);
+$('#btnPrev').onclick=()=>go(cur-1); $('#btnNext').onclick=()=>go(cur+1);
+$('#btnTh').onclick=()=>toggleTheme();
+$('#btnFs').onclick=()=>{ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen(); };
+$('#btnOv').onclick=()=>toggleOv();
+function toggleTheme(){
+  const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  window.dispatchEvent(new CustomEvent('theme'));
+}
+function toggleOv(){ $('#ov').classList.toggle('on'); }
+/* mục lục */
+(function buildOv(){
+  const g=$('#ovg'); let last='';
+  slides.forEach((s,i)=>{
+    if(s.dataset.sec!==last){ last=s.dataset.sec;
+      const h=document.createElement('div'); h.className='ovsec'; h.textContent=last; g.appendChild(h); }
+    const c=document.createElement('div'); c.className='ovc';
+    c.innerHTML=`<span class="num">SLIDE ${i+1}</span><span class="t">${s.dataset.title}</span>`+
+      (s.dataset.int?`<span class="s">◆ có công cụ tương tác</span>`:'');
+    c.onclick=()=>{ go(i); toggleOv(); }; g.appendChild(c);
+  });
+})();
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  const k=e.key.toLowerCase();
+  if(k==='arrowright'||k==='pagedown'||k===' '){e.preventDefault();go(cur+1);}
+  else if(k==='arrowleft'||k==='pageup'){e.preventDefault();go(cur-1);}
+  else if(k==='home'){go(0);} else if(k==='end'){go(slides.length-1);}
+  else if(k==='o'){toggleOv();} else if(k==='escape'){$('#ov').classList.remove('on');}
+  else if(k==='d'){toggleTheme();}
+  else if(k==='f'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+  else if(k==='p'){window.print();}
+});
+window.addEventListener('resize',()=>{fit();afSoon();});
+window.addEventListener('load',()=>{fit();autofit(slides[cur]);});
+fit();
+
+/* ═══════════ TÔ MÀU CÚ PHÁP VERILOG ═══════════ */
+const M0=String.fromCharCode(1), M1=String.fromCharCode(2);
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function vl(src){
+  let s=esc(src), cm=[];
+  s=s.replace(/\/\/[^\n]*/g,m=>{cm.push(m);return M0+String.fromCharCode(0x2460+cm.length-1)+M1;});
+  s=s.replace(/\b(module|endmodule|input|output|inout|always|initial|begin|end|if|else|case|casex|casez|endcase|default|assign|posedge|negedge|localparam|parameter|genvar|generate|endgenerate|integer|for|while|repeat|forever|fork|join|disable|force|release|and|or|xor|not|nand|nor|xnor|buf|function|endfunction|task|endtask|timescale)\b/g,
+    '<span class="kw">$1</span>');
+  s=s.replace(/\b(wire|reg|logic|real|time)\b/g,'<span class="ty">$1</span>');
+  s=s.replace(/(\d+'[bhdoBHDO][0-9a-fA-FxzXZ_?]+)/g,'<span class="nu">$1</span>');
+  s=s.replace(/(?<![\w#])(\d+)(?![\w'])/g,'<span class="nu">$1</span>');
+  /* chú thích đã được esc() ở bước đầu — không escape lần hai */
+  s=s.replace(new RegExp(M0+'(.)'+M1,'g'),(m,c)=>'<span class="cm">'+cm[c.charCodeAt(0)-0x2460]+'</span>');
+  return s;
+}
+function mark(html,cls){return '<span class="'+cls+'">'+html+'</span>';}
+const CO=['--acc','--teal','--violet','--amber','--green','--red','--pink'];
+/* mũi tên có đỉnh đặt đúng tại điểm nhận */
+function arw(px,py,dir,col,len,wid){
+  len=len||9; wid=wid||4.2;
+  const d={r:`M${px} ${py} l${-len} ${-wid} v${2*wid} z`,
+           l:`M${px} ${py} l${len} ${-wid} v${2*wid} z`,
+           d:`M${px} ${py} l${-wid} ${-len} h${2*wid} z`,
+           u:`M${px} ${py} l${-wid} ${len} h${2*wid} z`}[dir];
+  return S('path',{d:d,fill:`var(${col})`});
+}
+
+/* ═══════════ SLIDE 2 · BẢN ĐỒ BUỔI HỌC ═══════════ */
+(function roadmap(){
+  const P=[
+   {n:'Nguyên lý mô phỏng',s:[3,4,5,6,7],c:'--acc',
+    tags:['hàng đợi sự kiện','fanout','ba bước','so sánh phương pháp'],
+    goal:'Hiểu chương trình mô phỏng tính toán như thế nào, vì sao nó nhanh, và nó không trả lời được câu hỏi gì.'},
+   {n:'Thời gian mô phỏng',s:[8,9,10,11,12],c:'--violet',
+    tags:['zero · unit · SDF','`timescale','trễ dây và trễ cổng','inter · intra','vùng sự kiện'],
+    goal:'Nắm cách thời gian được mô hình hoá, ba mức trễ, và thứ tự bốn vùng sự kiện trong một bước thời gian.'},
+   {n:'Testbench',s:[13,14,15,16,17,18,19,20,21,22,23],c:'--teal',
+    tags:['DUT · DUV','bốn thành phần','ba cách sinh kích thích','coverage','tự kiểm tra','sinh xung nhịp'],
+    goal:'Dựng được một testbench đầy đủ: sinh kích thích, quan sát, so sánh tự động và sinh xung nhịp.'},
+   {n:'Câu lệnh testbench',s:[24,25,26,27,28,29,30],c:'--amber',
+    tags:['for · while · repeat · forever','fork · join','disable','vào ra tệp','force · release'],
+    goal:'Dùng được các cấu trúc ngôn ngữ chỉ hợp lệ trong testbench và biết vì sao chúng không tổng hợp được.'},
+   {n:'Hàm hệ thống',s:[31,32,33,34],c:'--green',
+    tags:['$stop · $finish','$time · $realtime','$random','$dumpvars · VCD'],
+    goal:'Tra cứu nhanh nhóm hàm hệ thống và dùng tệp VCD một cách hợp lý về dung lượng.'}
+  ];
+  let sel=0;
+  function draw(){
+    const p=P[sel];
+    $('#rmTags').innerHTML=p.tags.map(t=>`<span class="badge info" style="font-size:11.5px">${t}</span>`).join('');
+    const W=1180,H=150,L=10,dx=(W-2*L)/P.length;
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    P.forEach((q,i)=>{
+      const x=L+i*dx, on=i===sel;
+      h+=S('rect',{x:x+5,y:18,width:dx-10,height:82,rx:8,
+        fill:on?`var(${q.c})`:'var(--surface2)',stroke:`var(${q.c})`,'stroke-width':on?2.6:1.5,
+        class:'rmb','data-i':i,style:'cursor:pointer'});
+      h+=S('text',{x:x+dx/2,y:42,'font-size':12.5,'text-anchor':'middle','font-weight':750,
+        fill:on?'#fff':'var(--ink)',style:'pointer-events:none'},'PHẦN '+(i+1));
+      let l1=q.n,l2='';
+      if(q.n.length>15){
+        const k=q.n.lastIndexOf(' ',Math.ceil(q.n.length/2)+3);
+        if(k>0){ l1=q.n.slice(0,k); l2=q.n.slice(k+1); }
+      }
+      h+=S('text',{x:x+dx/2,y:62,'font-size':11.5,'text-anchor':'middle',
+        fill:on?'#fff':'var(--ink2)',style:'pointer-events:none'},l1);
+      h+=S('text',{x:x+dx/2,y:76,'font-size':11.5,'text-anchor':'middle',
+        fill:on?'#fff':'var(--ink2)',style:'pointer-events:none'},l2);
+      h+=S('text',{x:x+dx/2,y:93,'font-size':9.5,'text-anchor':'middle',
+        fill:on?'#fff':'var(--muted)',style:'pointer-events:none'},'slide '+q.s[0]+'–'+q.s[q.s.length-1]);
+      if(i<P.length-1){
+        h+=S('path',{d:`M${x+dx-5} 59 H${x+dx+5}`,stroke:'var(--muted)','stroke-width':1.6});
+        h+=arw(x+dx+5,59,'r','--muted',6,3);
+      }
+    });
+    $('#rmSvg').innerHTML=h;
+    $$('#rmSvg .rmb').forEach(r=>r.onclick=()=>{ sel=+r.dataset.i; draw(); });
+    const rows=p.s.map(i=>{
+      const s=$$('.slide')[i-1];
+      return `<tr><td class="mono" style="width:13%;color:var(${p.c});font-weight:700">slide ${i}</td>`+
+             `<td>${s?s.dataset.title:'—'}</td></tr>`;}).join('');
+    $('#rmDetail').innerHTML=
+      `<div class="g2" style="gap:16px">
+         <div class="card plain" style="border:1.6px solid var(${p.c})">
+           <h4 style="margin:0 0 6px">Mục tiêu phần ${sel+1}</h4>
+           <p class="sub" style="margin:0">${p.goal}</p></div>
+         <div class="card plain" style="border:1px solid var(--line)">
+           <h4 style="margin:0 0 6px">Các slide thuộc phần này</h4>
+           <table class="tt" style="text-align:left"><tbody>${rows}</tbody></table></div>
+       </div>`;
+  }
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 4 · HAI NGUYÊN TẮC TÍNH LẠI ═══════════ */
+(function recalc(){
+  /* mạch mẫu: 3 tầng, 7 cổng — dùng chung cho hai hình */
+  const G=[{id:'G1',x:130,y:26},{id:'G2',x:130,y:70},{id:'G3',x:130,y:114},
+           {id:'G4',x:240,y:48},{id:'G5',x:240,y:100},
+           {id:'G6',x:340,y:74},{id:'G7',x:340,y:126}];
+  const IN=[{n:'a',y:20},{n:'b',y:52},{n:'c',y:84},{n:'d',y:116},{n:'e',y:148}];
+  const E=[['a','G1'],['b','G1'],['b','G2'],['c','G2'],['c','G3'],['d','G3'],
+           ['G1','G4'],['G2','G4'],['G2','G5'],['G3','G5'],['G4','G6'],['G5','G6'],
+           ['G5','G7'],['e','G7']];
+  const pos={}; G.forEach(g=>pos[g.id]={x:g.x,y:g.y,w:46,h:26});
+  IN.forEach(i=>pos[i.n]={x:44,y:i.y-10,w:0,h:20});
+  const outP=n=>pos[n].w? {x:pos[n].x+pos[n].w,y:pos[n].y+pos[n].h/2} : {x:pos[n].x,y:pos[n].y+10};
+  const inP=(n,k)=>({x:pos[n].x,y:pos[n].y+(k?pos[n].h*0.74:pos[n].h*0.26)});
+  /* fanout của 'b' */
+  const hot=new Set(['b','G1','G2','G4','G5','G6','G7']);
+  const RAIL={a:0,b:1,c:2,d:3,e:4,G1:0,G2:1,G3:2,G4:0,G5:1,G6:0,G7:1};
+  function build(all){
+    let h=S('rect',{x:0,y:0,width:430,height:168,fill:'var(--surface)'});
+    /* dây */
+    const cnt={};
+    E.forEach(([s,t])=>{
+      const k=(cnt[t]=(cnt[t]||0));
+      cnt[t]=k+1;
+      const a=outP(s), b=inP(t,k);
+      const live = all || (hot.has(s)&&hot.has(t));
+      /* mỗi tín hiệu nguồn có một rail dọc riêng để hai dây khác net không chồng lên nhau */
+      const mx=a.x+12+7*(RAIL[s]||0);
+      h+=S('path',{d:`M${a.x} ${a.y} H${mx} V${b.y} H${b.x}`,fill:'none',
+        stroke:live?'var(--red)':'var(--line)','stroke-width':live?2:1.2});
+    });
+    /* nhãn đầu vào */
+    IN.forEach(i=>{
+      const live = all || hot.has(i.n);
+      h+=S('text',{x:34,y:i.y+4,'font-size':11,'text-anchor':'end','font-weight':700,
+        fill:live?'var(--red)':'var(--muted)'},i.n);
+      h+=S('circle',{cx:44,cy:i.y,r:3,fill:live?'var(--red)':'var(--line)'});
+    });
+    /* cổng */
+    G.forEach(g=>{
+      const live = all || hot.has(g.id);
+      h+=S('rect',{x:g.x,y:g.y,width:46,height:26,rx:5,
+        fill:live?'var(--red-soft)':'var(--surface2)',
+        stroke:live?'var(--red)':'var(--line)','stroke-width':live?2:1.2});
+      h+=S('text',{x:g.x+23,y:g.y+17,'font-size':10.5,'text-anchor':'middle','font-weight':700,
+        fill:live?'var(--red)':'var(--muted)'},g.id);
+    });
+    /* đầu ra */
+    [['G6',74],['G7',126]].forEach(([n,y])=>{
+      const live = all || hot.has(n);
+      h+=S('path',{d:`M386 ${y+13} H410`,fill:'none',stroke:live?'var(--red)':'var(--line)','stroke-width':live?2:1.2});
+      h+=arw(410,y+13,'r',live?'--red':'--line',8,3.6);
+    });
+    h+=S('text',{x:215,y:164,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},
+      all?'b đổi giá trị: cả 7 cổng đều được tính lại':'b đổi giá trị: chỉ 6 cổng trên đường lan được tính lại');
+    return h;
+  }
+  function draw(){
+    if($('#g_all'))  $('#g_all').innerHTML=build(true);
+    if($('#g_path')) $('#g_path').innerHTML=build(false);
+  }
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 6 · HÀNG ĐỢI SỰ KIỆN ═══════════ */
+(function evq(){
+  /* mạch: n1 = a&b (#2), n2 = b|c (#3), n3 = n1^n2 (#2), y = ~n3 (#1) */
+  const GA=[{id:'G1',op:'AND',d:2,in:['a','b'],out:'n1',x:150,y:30},
+            {id:'G2',op:'OR', d:3,in:['b','c'],out:'n2',x:150,y:118},
+            {id:'G3',op:'XOR',d:2,in:['n1','n2'],out:'n3',x:290,y:74},
+            {id:'G4',op:'NOT',d:1,in:['n3'],out:'y',  x:410,y:74}];
+  const SIG=['a','b','c','n1','n2','n3','y'];
+  const YP={a:34,b:88,c:150,n1:52,n2:140,n3:96,y:96};
+  const STIM=[{k:'a: 0 → 1',s:{a:1}},{k:'b: 0 → 1',s:{b:1}},{k:'c: 0 → 1',s:{c:1}},
+              {k:'a,c: 0 → 1',s:{a:1,c:1}}];
+  let pick=0, val={}, queue=[], t=0, ncalc=0, hist=[], last=null;
+  function evalGate(g,v){
+    const A=v[g.in[0]], B=g.in[1]!==undefined?v[g.in[1]]:0;
+    return g.op==='AND'?(A&B):g.op==='OR'?(A|B):g.op==='XOR'?(A^B):(1-A);
+  }
+  function reset(){
+    val={a:0,b:0,c:0,n1:0,n2:0,n3:0,y:1};
+    /* trạng thái ổn định ban đầu */
+    val.n1=0; val.n2=0; val.n3=0; val.y=1;
+    t=0; ncalc=0; last=null;
+    hist=[{t:0,v:Object.assign({},val)}];
+    queue=[];
+    const s=STIM[pick].s;
+    Object.keys(s).forEach(k=>{ if(val[k]!==s[k]) queue.push({t:0,sig:k,v:s[k]}); });
+    note('Hàng đợi đã nạp '+queue.length+' sự kiện đầu vào tại t = 0. Bấm “Một bước” để xử lý sự kiện đầu tiên.','');
+    draw();
+  }
+  function note(txt,cls){ $('#evNote').className='callout'+(cls?' '+cls:''); $('#evNoteT').textContent=txt; }
+  function step(){
+    if(!queue.length){ note('Hàng đợi rỗng. Mô phỏng dừng ở t = '+t+'; mọi tín hiệu đã ổn định.','key'); return false; }
+    queue.sort((p,q)=>p.t-q.t);
+    const ev=queue.shift();
+    t=ev.t; val[ev.sig]=ev.v; last=ev.sig;
+    hist.push({t:t,v:Object.assign({},val)});
+    const fan=GA.filter(g=>g.in.indexOf(ev.sig)>=0);
+    let msg='t = '+t+': lấy sự kiện '+ev.sig+' → '+ev.v+'. ';
+    if(!fan.length){ msg+='Tín hiệu này không lái phần tử nào.'; }
+    else{
+      const ch=[];
+      fan.forEach(g=>{
+        ncalc++;
+        const nv=evalGate(g,val);
+        if(nv!==val[g.out]){ queue.push({t:t+g.d,sig:g.out,v:nv}); ch.push(g.id+' → '+g.out+'='+nv+' tại t='+(t+g.d)); }
+      });
+      msg+='Tính lại '+fan.length+' phần tử. '+(ch.length? 'Sinh '+ch.length+' sự kiện mới: '+ch.join(', ')+'.'
+        : 'Không phần tử nào đổi đầu ra, nhánh phía sau dừng lại.');
+    }
+    note(msg, queue.length?'':'key');
+    draw(); return true;
+  }
+  function draw(){
+    $('#evT').textContent=t;
+    $('#evN').textContent=ncalc;
+    /* hàng đợi */
+    const q=queue.slice().sort((p,r)=>p.t-r.t);
+    $('#evQueue').innerHTML= q.length
+      ? '<table class="tt" style="font-size:12px"><thead><tr><th>t</th><th>tín hiệu</th><th>giá trị</th></tr></thead><tbody>'+
+        q.map((e,i)=>`<tr${i===0?' class="hl"':''}><td>${e.t}</td><td>${e.sig}</td><td>${e.v}</td></tr>`).join('')+
+        '</tbody></table>'
+      : '<p class="sub" style="margin:0;text-align:center;padding:24px 0">hàng đợi rỗng</p>';
+    /* sơ đồ mạch */
+    const W=560,H=230;
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    const col=s=>s===last?'--red':(val[s]?'--acc':'--muted');
+    /* đầu vào: mỗi dây kết thúc đúng trên cạnh trái của cổng nhận */
+    [['a',44],['b',68],['c',156]].forEach(([n,y])=>{
+      h+=S('text',{x:16,y:y+4,'font-size':12,'font-weight':700,fill:`var(${col(n)})`},n);
+      h+=S('text',{x:34,y:y+4,'font-size':12,'font-weight':700,fill:`var(${col(n)})`},'='+val[n]);
+      h+=S('path',{d:`M62 ${y} H150`,fill:'none',stroke:`var(${col(n)})`,'stroke-width':2.2});
+      h+=arw(150,y,'r',col(n),8,3.6);
+    });
+    /* b rẽ nhánh xuống đầu vào thứ nhất của G2 */
+    h+=S('path',{d:`M104 68 V132 H150`,fill:'none',stroke:`var(${col('b')})`,'stroke-width':2.2});
+    h+=arw(150,132,'r',col('b'),8,3.6);
+    h+=S('circle',{cx:104,cy:68,r:3.4,fill:`var(${col('b')})`});
+    /* cổng */
+    GA.forEach(g=>{
+      const on=g.out===last;
+      h+=S('rect',{x:g.x,y:g.y,width:64,height:52,rx:7,
+        fill:on?'var(--red-soft)':'var(--surface2)',stroke:on?'var(--red)':'var(--line)','stroke-width':on?2.4:1.6});
+      h+=S('text',{x:g.x+32,y:g.y+24,'font-size':12,'text-anchor':'middle','font-weight':750,
+        fill:on?'var(--red)':'var(--ink)'},g.op);
+      h+=S('text',{x:g.x+32,y:g.y+40,'font-size':9.5,'text-anchor':'middle',
+        fill:on?'var(--red)':'var(--muted)'},'#'+g.d);
+    });
+    /* dây trung gian */
+    const wire=(d,s)=>{ h+=S('path',{d:d,fill:'none',stroke:`var(${col(s)})`,'stroke-width':2.2}); };
+    wire('M214 56 H250 V88 H290','n1'); h+=arw(290,88,'r',col('n1'),8,3.6);
+    wire('M214 144 H250 V112 H290','n2'); h+=arw(290,112,'r',col('n2'),8,3.6);
+    wire('M354 100 H410','n3'); h+=arw(410,100,'r',col('n3'),8,3.6);
+    wire('M474 100 H524','y');  h+=arw(524,100,'r',col('y'),8,3.6);
+    /* nhãn tín hiệu trung gian */
+    [['n1',232,50],['n2',232,138],['n3',382,94],['y',500,94]].forEach(([n,x,y])=>{
+      h+=S('text',{x:x,y:y,'font-size':10.5,'text-anchor':'middle','font-weight':700,
+        fill:`var(${col(n)})`},n+'='+val[n]);
+    });
+    $('#evSvg').innerHTML=h;
+    /* giản đồ thời gian */
+    const W2=560,H2=172,L2=52,R2=14,tEnd=Math.max(8,t+2);
+    const x2=v=>L2+v/tEnd*(W2-L2-R2);
+    let g2=S('rect',{x:0,y:0,width:W2,height:H2,fill:'var(--surface)'});
+    for(let k=0;k<=tEnd;k++){
+      g2+=S('line',{x1:x2(k),y1:12,x2:x2(k),y2:150,stroke:'var(--line)','stroke-width':.8,'stroke-dasharray':'2 3'});
+      g2+=S('text',{x:x2(k),y:164,'font-size':9,'text-anchor':'middle',fill:'var(--muted)'},k);
+    }
+    SIG.forEach((s,i)=>{
+      const y0=20+i*19, hi=y0, lo=y0+12;
+      g2+=S('text',{x:6,y:lo,'font-size':10,'font-weight':700,fill:`var(${val[s]?'--acc':'--ink2'})`},s);
+      let d='', prev=null;
+      hist.forEach(pt=>{
+        const yy=pt.v[s]?hi:lo, xx=x2(pt.t);
+        if(prev===null) d+=`M${xx} ${yy}`;
+        else if(yy!==prev) d+=`L${xx} ${prev} L${xx} ${yy}`;
+        else d+=`L${xx} ${yy}`;
+        prev=yy;
+      });
+      d+=`L${x2(tEnd)} ${prev}`;
+      g2+=S('path',{d:d,fill:'none',stroke:`var(${s===last?'--red':'--acc'})`,'stroke-width':s===last?2.4:1.8});
+    });
+    $('#evWf').innerHTML=g2;
+  }
+  (function build(){
+    const p=$('#evStim');
+    STIM.forEach((s,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===0?' on':'');
+      b.textContent=s.k; b.style.cssText='font-size:12px;padding:5px 9px';
+      b.onclick=()=>{ pick=i; $$('#evStim button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); reset(); };
+      p.appendChild(b);
+    });
+  })();
+  $('#evStep').onclick=step;
+  $('#evRun').onclick=()=>{ let n=0; while(step()&&n<60) n++; };
+  $('#evRst').onclick=reset;
+  reset(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 9 · TIMESCALE ═══════════ */
+(function tscale(){
+  const T=[{k:'1ns / 1ns',   u:1e-9, p:1e-9},
+           {k:'1ns / 100ps', u:1e-9, p:1e-10},
+           {k:'1ns / 100fs', u:1e-9, p:1e-13},
+           {k:'10ns / 1ns',  u:1e-8, p:1e-9},
+           {k:'1ps / 1ps',   u:1e-12,p:1e-12}];
+  const CMD=[{c:'#5   a = 1;',   v:5},
+             {c:'#2.5 b = 1;',   v:2.5},
+             {c:'#0.4 c = 1;',   v:0.4},
+             {c:'#1.26 d = 1;',  v:1.26}];
+  let sel=1;
+  const fmtT=s=>{ /* giây → chuỗi có đơn vị */
+    const U=[[1e-3,'ms'],[1e-6,'µs'],[1e-9,'ns'],[1e-12,'ps'],[1e-15,'fs']];
+    for(const [m,n] of U){ if(s>=m*0.999) return (s/m).toFixed(s/m<10?3:1).replace(/\.?0+$/,'').replace('.',',')+' '+n; }
+    return s.toExponential(2)+' s';
+  };
+  function draw(){
+    const t=T[sel];
+    $('#tsCode').innerHTML=vl('`timescale '+t.k.replace(/ /g,'')+'\n\nmodule tb;\n  '+
+      CMD.map(c=>c.c).join('\n  ')+'\nendmodule');
+    const stepU=t.p/t.u;            /* bước nhỏ nhất tính theo đơn vị */
+    $('#tsUnit').textContent=fmtT(t.u);
+    $('#tsPrec').textContent=fmtT(t.p);
+    $('#tsStep').textContent=(stepU>=1?stepU:stepU.toFixed(4)).toString().replace('.',',')+' đơn vị';
+    let rows='';
+    CMD.forEach(c=>{
+      const real=c.v*t.u;
+      const q=Math.round(c.v/stepU)*stepU;
+      const ok=Math.abs(q-c.v)<1e-12;
+      rows+=`<tr${ok?'':' class="hl"'}><td>${esc(c.c.trim())}</td><td>#${String(c.v).replace('.',',')}</td>`+
+            `<td>${fmtT(real)}</td><td style="color:var(${ok?'--green':'--red'});font-weight:700">`+
+            `${String(+q.toFixed(6)).replace('.',',')} đơn vị</td></tr>`;
+    });
+    $('#tsRows').innerHTML=rows;
+    const bad=CMD.filter(c=>Math.abs(Math.round(c.v/stepU)*stepU-c.v)>1e-12).length;
+    $('#tsNote').innerHTML= bad
+      ? `Với độ phân giải này, <strong>${bad} trong ${CMD.length}</strong> giá trị thời gian bị làm tròn. `+
+        `Dòng bị tô sáng là dòng có sai khác giữa số viết trong mã và số bộ mô phỏng thực sự dùng.`
+      : `Độ phân giải đủ mịn cho cả bốn giá trị: không giá trị nào bị làm tròn. `+
+        `Đổi lại, hàng đợi sự kiện phải lưu số lớn hơn nên tốn bộ nhớ và chậm hơn.`;
+  }
+  (function build(){
+    const p=$('#tsPick');
+    T.forEach((t,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===sel?' on':'');
+      b.textContent='`timescale '+t.k;
+      b.style.cssText='font-family:var(--mono);font-size:11.5px;padding:5px 9px';
+      b.onclick=()=>{ sel=i; $$('#tsPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 11 · INTER VÀ INTRA STATEMENT DELAY ═══════════ */
+(function interintra(){
+  const D=[
+   {k:'#4 b = a;  (inter)', tr:5, bv:3,
+    c:'initial begin\n  #1;\n  #4 b = a;   // chờ tới t = 5 RỒI mới đọc a\nend',
+    o:'#  0: a=1 b=x\n#  2: a=2 b=x\n#  4: a=3 b=x\n#  5: a=3 b=3\n#  6: a=4 b=3',
+    note:'Trễ đứng trước phép gán. Tiến trình dừng từ t = 1 tới t = 5, sau đó mới đọc a. Tại t = 5 thì a đã bằng 3, nên b nhận giá trị 3.'},
+   {k:'b = #4 a;  (intra)', tr:1, bv:1,
+    c:'initial begin\n  #1;\n  b = #4 a;   // đọc a NGAY tại t = 1, gán tại t = 5\nend',
+    o:'#  0: a=1 b=x\n#  2: a=2 b=x\n#  4: a=3 b=x\n#  5: a=3 b=1\n#  6: a=4 b=1',
+    note:'Trễ nằm giữa dấu bằng và biểu thức. Vế phải được đọc ngay tại t = 1, khi a còn bằng 1; giá trị đó được giữ lại và chỉ ghi vào b tại t = 5.'}
+  ];
+  let sel=0;
+  function draw(){
+    const d=D[sel];
+    $('#idCode').innerHTML=vl(d.c);
+    $('#idOut').innerHTML=esc(d.o);
+    $('#idNoteT').textContent=d.note;
+    const W=560,H=200,L=56,R=16,tEnd=8, x=t=>L+t/tEnd*(W-L-R);
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    for(let t=0;t<=tEnd;t++){
+      h+=S('line',{x1:x(t),y1:20,x2:x(t),y2:140,stroke:'var(--line)','stroke-width':.8,'stroke-dasharray':'2 3'});
+      h+=S('text',{x:x(t),y:156,'font-size':10,'text-anchor':'middle',
+        fill:(t===1||t===5)?'var(--acc)':'var(--muted)','font-weight':(t===1||t===5)?750:400},t);
+    }
+    h+=S('text',{x:W/2,y:172,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},'thời gian mô phỏng');
+    const bus=(name,y,col,segs)=>{
+      h+=S('text',{x:10,y:y+16,'font-size':11.5,'font-weight':700,fill:`var(${col})`},name);
+      segs.forEach(([t0,t1,v])=>{
+        const a=x(t0), b=x(t1), sl=4;
+        h+=S('path',{d:`M${a+sl} ${y} L${b-sl} ${y} L${b} ${y+12} L${b-sl} ${y+24} L${a+sl} ${y+24} L${a} ${y+12} Z`,
+          fill:v==='x'?'var(--red-soft)':`var(${col}-soft)`,stroke:`var(${col})`,'stroke-width':1.4});
+        h+=S('text',{x:(a+b)/2,y:y+17,'font-size':11.5,'text-anchor':'middle','font-weight':750,
+          fill:v==='x'?'var(--red)':`var(${col})`},v);
+      });
+    };
+    bus('a',28,'--acc',[[0,2,'1'],[2,4,'2'],[4,6,'3'],[6,8,'4']]);
+    bus('b',80,'--violet',[[0,5,'x'],[5,8,''+d.bv]]);
+    /* mốc đọc vế phải và mốc gán */
+    h+=S('circle',{cx:x(d.tr),cy:40,r:7,fill:'none',stroke:'var(--green)','stroke-width':2.4});
+    h+=S('text',{x:x(d.tr),y:18,'font-size':10,'text-anchor':'middle',fill:'var(--green)','font-weight':700},
+      'đọc a tại t = '+d.tr);
+    h+=S('circle',{cx:x(5),cy:92,r:7,fill:'none',stroke:'var(--violet)','stroke-width':2.4});
+    h+=S('path',{d:`M${x(d.tr)} 47 V92 H${x(5)-9}`,fill:'none',stroke:'var(--green)',
+      'stroke-width':1.8,'stroke-dasharray':'4 3'});
+    h+=arw(x(5)-9,92,'r','--green',7,3.4);
+    h+=S('text',{x:x(5)+14,y:118,'font-size':10,fill:'var(--violet)','font-weight':700},'gán b tại t = 5');
+    $('#idSvg').innerHTML=h;
+  }
+  (function build(){
+    const p=$('#idPick');
+    D.forEach((d,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===0?' on':'');
+      b.textContent=d.k; b.style.cssText='font-family:var(--mono);font-size:11.5px;padding:5px 9px';
+      b.onclick=()=>{ sel=i; $$('#idPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 12 · BỐN VÙNG SỰ KIỆN ═══════════ */
+(function regions(){
+  const R=[{n:'Active',   c:'--acc',    t:'gán blocking · tính RHS của <= · assign · $display'},
+           {n:'Inactive', c:'--violet', t:'các sự kiện bị hoãn bằng #0'},
+           {n:'NBA',      c:'--teal',   t:'ghi giá trị của phép gán non-blocking'},
+           {n:'Monitor',  c:'--green',  t:'$monitor · $strobe'}];
+  function draw(){
+    const W=470,H=250;
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    h+=S('text',{x:W/2,y:16,'font-size':10.5,'text-anchor':'middle',fill:'var(--muted)'},
+      'trong cùng một giá trị thời gian mô phỏng');
+    R.forEach((r,i)=>{
+      const y=28+i*50;
+      h+=S('rect',{x:24,y:y,width:422,height:36,rx:7,fill:`var(${r.c}-soft)`,
+        stroke:`var(${r.c})`,'stroke-width':1.8});
+      h+=S('text',{x:40,y:y+23,'font-size':12,'font-weight':750,fill:'var(--ink)'},(i+1)+'. '+r.n);
+      h+=S('text',{x:150,y:y+23,'font-size':10,fill:`var(${r.c})`},r.t);
+      if(i<R.length-1){
+        h+=S('path',{d:`M235 ${y+36} V${y+42}`,fill:'none',stroke:'var(--ink2)','stroke-width':1.8});
+        h+=arw(235,y+42,'d','--ink2',6,3.2);
+      }
+    });
+    h+=S('path',{d:`M446 46 H460 V${28+3*50+18} H${446}`,fill:'none',stroke:'var(--muted)',
+      'stroke-width':1.6,'stroke-dasharray':'5 3'});
+    h+=arw(446,28+3*50+18,'l','--muted',7,3.4);
+    h+=S('text',{x:W/2,y:242,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},
+      'chỉ khi cả bốn vùng rỗng, thời gian mô phỏng mới tiến lên');
+    $('#rgSvg').innerHTML=h;
+  }
+  draw(); window.addEventListener('theme',draw);
+})();
+/* ═══════════ SLIDE 16 · BA PHƯƠNG PHÁP SINH KÍCH THÍCH ═══════════ */
+(function stim(){
+  const M=[
+   {k:'Vét cạn',c:'--acc',
+    name:'Phương pháp 1 — vét cạn mọi tổ hợp',
+    desc:'Chạy toàn bộ 2ⁿ tổ hợp đầu vào bằng một vòng lặp. Không bỏ sót trường hợp nào của mạch tổ hợp.',
+    pro:'Chắc chắn phát hiện được mọi lỗi chức năng của mạch tổ hợp. Không cần suy nghĩ về việc chọn vector.',
+    con:'Số vector tăng theo hàm mũ. Với n lớn hơn khoảng 20 thì không còn khả thi. Với mạch dãy còn phải nhân thêm không gian trạng thái.',
+    code:"reg [W:0] stim;   // rộng hơn số bit đầu vào 1 bit\n\ninitial begin\n  for (stim = 0; stim < (1<<W); stim = stim + 1)\n    #10;\n  #10 $stop;\nend",
+    cov:n=>1},
+   {k:'Ngẫu nhiên',c:'--violet',
+    name:'Phương pháp 2 — sinh ngẫu nhiên',
+    desc:'Sinh tổ hợp đầu vào bằng hàm $random với số vector cố định, thường vài nghìn tới vài triệu.',
+    pro:'Số vector do người dùng chọn, không phụ thuộc độ rộng đầu vào. Chạy được hồi quy dài không cần viết thêm mã.',
+    con:'Không phát hiện được mọi lỗi. Xác suất rơi đúng vào giá trị biên rất nhỏ, nên dễ bỏ sót các trường hợp tới hạn.',
+    code:"integer seed = 2024;\n\ninitial begin\n  stim = $random(seed);\n  repeat (10000) begin\n    #10 stim = $random;\n  end\n  #10 $stop;\nend",
+    cov:n=>0.72},
+   {k:'Theo kịch bản',c:'--teal',
+    name:'Phương pháp 3 — dựng theo kịch bản hoạt động',
+    desc:'Liệt kê các trường hợp hoạt động tới hạn từ kế hoạch kiểm chứng, mỗi trường hợp một vector hoặc một chuỗi vector.',
+    pro:'Nhắm thẳng vào các vùng dễ sai: giá trị biên, điểm tràn, chuyển trạng thái hiếm. Số vector rất nhỏ mà hiệu quả cao.',
+    con:'Phụ thuộc vào chất lượng kế hoạch kiểm chứng. Không phủ được các lỗi nằm ngoài danh sách trường hợp mà người viết nghĩ ra.',
+    code:"reg [55:0] pat [0:N-1];\n\ninitial begin\n  $readmemh(\"critical-cases.txt\", pat);\n  for (i = 0; i < N; i = i + 1) begin\n    stim = pat[i][W:0];\n    #10;\n  end\n  #10 $stop;\nend",
+    cov:n=>0.86}
+  ];
+  let sel=0;
+  function draw(){
+    const m=M[sel], W=+$('#stW').value;
+    $('#stWv').textContent=W;
+    $('#stName').textContent=m.name;
+    $('#stDesc').textContent=m.desc;
+    $('#stPro').textContent=m.pro;
+    $('#stCon').textContent=m.con;
+    $('#stCode').innerHTML=vl(m.code.replace(/\bW\b/g,String(W)).replace(/\bN\b/g,'11'));
+    const full=Math.pow(2,W);
+    const nvec = sel===0? full : (sel===1? 10000 : 11);
+    const secs = nvec*10e-9;
+    $('#stVec').textContent = nvec>=1e6? (nvec/1e6).toFixed(1).replace('.',',')+' triệu'
+      : nvec>=1000? Math.round(nvec).toLocaleString('vi-VN') : String(nvec);
+    $('#stTime').textContent = secs<1e-3? (secs*1e6).toFixed(1).replace('.',',')+' µs'
+      : secs<1? (secs*1e3).toFixed(1).replace('.',',')+' ms'
+      : secs<3600? secs.toFixed(1).replace('.',',')+' s'
+      : secs<86400*365? (secs/3600).toFixed(1).replace('.',',')+' giờ'
+      : (secs/(86400*365)).toFixed(1).replace('.',',')+' năm';
+    const feas = sel!==0 || W<=20;
+    $('#stFeas').textContent = feas? 'khả thi' : 'không khả thi';
+    $('#stFeasCard').className = 'stat '+(feas?'ok':'bad');
+    /* hình phủ không gian đầu vào */
+    const Wd=560,Hd=150;
+    let h=S('rect',{x:0,y:0,width:Wd,height:Hd,fill:'var(--surface)'});
+    const bx=30,by=18,bw=500,bh=104;
+    h+=S('rect',{x:bx,y:by,width:bw,height:bh,rx:6,fill:'var(--surface2)',stroke:'var(--line)','stroke-width':1.5});
+    h+=S('text',{x:bx+bw/2,y:140,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},
+      'hình chữ nhật là toàn bộ không gian 2^'+W+' tổ hợp đầu vào');
+    const rnd=(function(){let s=97;return()=>{s=(s*1103515245+12345)&0x7fffffff;return (s>>16)/32768;};})();
+    if(sel===0){
+      h+=S('rect',{x:bx+2,y:by+2,width:bw-4,height:bh-4,rx:5,fill:`var(${m.c}-soft)`,
+        stroke:`var(${m.c})`,'stroke-width':2});
+      h+=S('text',{x:bx+bw/2,y:by+bh/2+5,'font-size':13,'text-anchor':'middle','font-weight':750,
+        fill:`var(${m.c})`},'phủ 100 % không gian');
+    } else if(sel===1){
+      for(let i=0;i<170;i++){
+        h+=S('circle',{cx:bx+8+rnd()*(bw-16),cy:by+8+rnd()*(bh-16),r:2.6,fill:`var(${m.c})`,opacity:.75});
+      }
+      /* các góc tới hạn không được phủ */
+      [[bx+10,by+10],[bx+bw-10,by+10],[bx+10,by+bh-10],[bx+bw-10,by+bh-10]].forEach(([cx,cy])=>{
+        h+=S('circle',{cx:cx,cy:cy,r:8,fill:'none',stroke:'var(--red)','stroke-width':2,'stroke-dasharray':'3 2'});
+      });
+      h+=S('text',{x:bx+bw/2,y:by+bh+14,'font-size':9.5,'text-anchor':'middle',fill:'var(--red)'},
+        'bốn vòng đỏ: các góc tới hạn thường bị bỏ sót');
+    } else {
+      const pts=[[bx+12,by+12],[bx+bw-12,by+12],[bx+12,by+bh-12],[bx+bw-12,by+bh-12],
+                 [bx+bw/2,by+12],[bx+bw/2,by+bh-12],[bx+12,by+bh/2],[bx+bw-12,by+bh/2],
+                 [bx+bw/2,by+bh/2],[bx+bw/4,by+bh/2],[bx+3*bw/4,by+bh/2]];
+      pts.forEach(([cx,cy])=>{
+        h+=S('circle',{cx:cx,cy:cy,r:7,fill:`var(${m.c}-soft)`,stroke:`var(${m.c})`,'stroke-width':2.2});
+      });
+      h+=S('text',{x:bx+bw/2,y:by+bh+14,'font-size':9.5,'text-anchor':'middle',fill:`var(${m.c})`},
+        'mỗi điểm là một trường hợp tới hạn lấy từ kế hoạch kiểm chứng');
+    }
+    $('#stSvg').innerHTML=h;
+  }
+  (function build(){
+    const p=$('#stPick');
+    M.forEach((m,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===0?' on':'');
+      b.textContent=m.k; b.style.cssText='font-size:12.5px;padding:6px 11px';
+      b.onclick=()=>{ sel=i; $$('#stPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+    $('#stW').addEventListener('input',draw);
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 19 · BAO PHỦ ═══════════ */
+(function coverage(){
+  /* FSM đèn giao thông 4 trạng thái, dùng làm mạch mẫu đo bao phủ */
+  const LINES=[
+   {t:'always @(*) begin',k:'st'},
+   {t:'  nxt = state;            // giá trị mặc định',k:'st'},
+   {t:'  case (state)',k:'st'},
+   {t:'    MG: if (done && sensor) nxt = MY;',k:'br',br:0},
+   {t:'    MY: if (done)           nxt = SG;',k:'br',br:1},
+   {t:'    SG: if (done || !sensor) nxt = SY;',k:'br',br:2},
+   {t:'    SY: if (done)           nxt = MG;',k:'br',br:3},
+   {t:'    default: nxt = MG;',k:'br',br:4},
+   {t:'  endcase',k:'st'},
+   {t:'end',k:'st'}
+  ];
+  const MODE=[{k:'Vét cạn',f:n=>({st:1,br:Math.min(1,n/24),fs:Math.min(1,n/32)})},
+              {k:'Ngẫu nhiên',f:n=>({st:Math.min(1,n/6),br:Math.min(0.8,n/60),fs:Math.min(0.75,n/70)})},
+              {k:'Theo kịch bản',f:n=>({st:Math.min(1,n/5),br:Math.min(1,n/14),fs:Math.min(1,n/18)})}];
+  let mode=2;
+  function draw(){
+    const n=+$('#cvN').value; $('#cvNv').textContent=n;
+    const c=MODE[mode].f(n);
+    const nbr=LINES.filter(l=>l.k==='br').length;
+    const hitBr=Math.round(c.br*nbr);
+    $('#cvCode').innerHTML=LINES.map((l,i)=>{
+      const hit = l.k==='st'? (c.st>0) : (l.br<hitBr);
+      return hit? mark(vl(l.t),'ok') : vl(l.t);
+    }).join('\n');
+    $('#cvSt').textContent=Math.round(c.st*100)+' %';
+    $('#cvBr').textContent=Math.round(c.br*100)+' %';
+    $('#cvFs').textContent=Math.round(c.fs*100)+' %';
+    ['cvSt','cvBr','cvFs'].forEach((id,k)=>{
+      const v=[c.st,c.br,c.fs][k];
+      $('#'+id).style.color = v>=0.99?'var(--green)': v>=0.8?'var(--amber)':'var(--red)';
+    });
+    /* đường cong bao phủ theo số vector */
+    const W=560,H=190,L=44,R=16,T=14,B=34;
+    const x=v=>L+v/200*(W-L-R), y=v=>H-B-v*(H-T-B);
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    for(let p=0;p<=100;p+=25){
+      h+=S('line',{x1:L,y1:y(p/100),x2:W-R,y2:y(p/100),stroke:'var(--line)','stroke-width':.9,'stroke-dasharray':'3 3'});
+      h+=S('text',{x:L-6,y:y(p/100)+4,'font-size':9.5,'text-anchor':'end',fill:'var(--muted)'},p+' %');
+    }
+    for(let v=0;v<=200;v+=50){
+      h+=S('text',{x:x(v),y:H-14,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},v);
+    }
+    h+=S('text',{x:(L+W-R)/2,y:H-2,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},'số vector chạy');
+    [['st','--acc','câu lệnh'],['br','--violet','nhánh'],['fs','--teal','FSM']].forEach(([key,col,lb],i)=>{
+      let d='';
+      for(let v=1;v<=200;v+=2){
+        const q=MODE[mode].f(v)[key];
+        d+=(d?'L':'M')+x(v)+' '+y(q).toFixed(1);
+      }
+      h+=S('path',{d:d,fill:'none',stroke:`var(${col})`,'stroke-width':2.2});
+      h+=S('circle',{cx:x(n),cy:y(MODE[mode].f(n)[key]),r:4,fill:`var(${col})`});
+      h+=S('rect',{x:W-R-108,y:T+2+i*15,width:9,height:9,rx:2,fill:`var(${col})`});
+      h+=S('text',{x:W-R-95,y:T+11+i*15,'font-size':9.5,fill:'var(--ink2)'},lb);
+    });
+    h+=S('line',{x1:x(n),y1:T,x2:x(n),y2:H-B,stroke:'var(--red)','stroke-width':1.4,'stroke-dasharray':'4 3'});
+    $('#cvSvg').innerHTML=h;
+    const miss=nbr-hitBr;
+    $('#cvNote').innerHTML = miss
+      ? `Còn <strong>${miss}</strong> nhánh chưa được chạy lần nào. Đây chính là danh sách việc phải làm: bổ sung vector nhắm đúng vào các nhánh đó, chứ không phải tăng số vector ngẫu nhiên một cách mù quáng.`
+      : `Mọi nhánh đã được chạy ít nhất một lần. Lưu ý rằng bao phủ nhánh 100 % <strong>không</strong> chứng minh mạch đúng: nó chỉ nói rằng mọi dòng mã đã được thực thi, không nói rằng kết quả đã được kiểm tra.`;
+  }
+  (function build(){
+    const p=$('#cvPick');
+    MODE.forEach((m,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===mode?' on':'');
+      b.textContent=m.k; b.style.cssText='font-size:12px;padding:5px 9px';
+      b.onclick=()=>{ mode=i; $$('#cvPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+    $('#cvN').addEventListener('input',draw);
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 23 · SINH XUNG NHỊP ═══════════ */
+(function clockgen(){
+  const C=[
+   {k:'always',per:10,duty:.5,
+    c:'initial clk = 0;\nalways  #5 clk = ~clk;',
+    note:'Cách viết ngắn nhất. Khối always tự lặp lại nên không cần forever. Nửa chu kỳ là 5 nên chu kỳ đầy đủ là 10.'},
+   {k:'forever',per:10,duty:.5,
+    c:'initial begin\n  clk = 1\'b0;\n  forever #5 clk = ~clk;\nend',
+    note:'Tương đương cách trên nhưng nằm gọn trong một khối initial, nên đặt được cùng chỗ với lệnh khởi tạo reset.'},
+   {k:'tham số hoá',per:8,duty:.5,
+    c:'parameter CLK_PER = 8;   // ns\n\ninitial begin\n  clk = 1\'b0;\n  forever #(CLK_PER/2) clk = ~clk;\nend',
+    note:'Chu kỳ khai báo bằng parameter nên đổi tần số chỉ cần sửa một chỗ. Chú ý CLK_PER phải chẵn, nếu không phép chia nguyên làm sai chu kỳ.'},
+   {k:'duty 30 %',per:10,duty:.3,
+    c:'initial begin\n  clk = 1\'b0;\n  forever begin\n    #7 clk = 1\'b1;\n    #3 clk = 1\'b0;\n  end\nend',
+    note:'Xung nhịp không đối xứng, dùng để kiểm tra mạch có nhạy với độ rộng xung hay không. Mạch đồng bộ đúng chuẩn phải chạy được với mọi duty cycle hợp lệ.'}
+  ];
+  let sel=1;
+  function draw(){
+    const c=C[sel];
+    $('#ckCode').innerHTML=vl(c.c);
+    $('#ckPer').textContent=c.per+' ns';
+    $('#ckFrq').textContent=(1000/c.per).toFixed(0)+' MHz';
+    $('#ckNoteT').textContent=c.note;
+    const W=560,H=160,L=52,R=16,tEnd=40, x=t=>L+t/tEnd*(W-L-R);
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    for(let t=0;t<=tEnd;t+=5){
+      h+=S('line',{x1:x(t),y1:20,x2:x(t),y2:96,stroke:'var(--line)','stroke-width':.8,'stroke-dasharray':'2 3'});
+      h+=S('text',{x:x(t),y:112,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},t);
+    }
+    h+=S('text',{x:(L+W-R)/2,y:128,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},'t (ns)');
+    h+=S('text',{x:10,y:60,'font-size':11.5,'font-weight':700,fill:'var(--teal)'},'clk');
+    const hi=32, lo=84, hiT=c.per*c.duty;
+    let d='M'+x(0)+' '+lo;
+    for(let t=0;t<tEnd;t+=c.per){
+      const a=Math.min(t+c.per-hiT,tEnd), b=Math.min(t+c.per,tEnd);
+      d+=` L${x(a)} ${lo} L${x(a)} ${hi} L${x(b)} ${hi}`;
+      if(b<tEnd) d+=` L${x(b)} ${lo}`;
+    }
+    h+=S('path',{d:d,fill:'none',stroke:'var(--teal)','stroke-width':2.4});
+    /* chú thích chu kỳ */
+    const t0=c.per-hiT, t1=t0+c.per;
+    h+=S('path',{d:`M${x(t0)} 20 H${x(t1)}`,fill:'none',stroke:'var(--acc)','stroke-width':1.8});
+    h+=arw(x(t0),20,'l','--acc',7,3.4); h+=arw(x(t1),20,'r','--acc',7,3.4);
+    h+=S('text',{x:(x(t0)+x(t1))/2,y:15,'font-size':10,'text-anchor':'middle',fill:'var(--acc)','font-weight':700},
+      'chu kỳ = '+c.per+' ns');
+    h+=S('text',{x:(L+W-R)/2,y:146,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},
+      'duty cycle = '+Math.round(c.duty*100)+' %');
+    $('#ckSvg').innerHTML=h;
+  }
+  (function build(){
+    const p=$('#ckPick');
+    C.forEach((c,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===sel?' on':'');
+      b.textContent=c.k; b.style.cssText='font-size:12px;padding:5px 10px';
+      b.onclick=()=>{ sel=i; $$('#ckPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 24 · BỐN LỆNH LẶP ═══════════ */
+(function loops(){
+  const L=[
+   {k:'for',n:16,syn:'for (khoi_tao; dieu_kien; buoc_lap)\n  lenh;',
+    use:'Dùng khi biết trước số lần lặp',
+    desc:'Cấu trúc quen thuộc nhất. Trong mã thiết kế, vòng for được công cụ tổng hợp trải phẳng thành phần cứng lặp lại, nên biên phải là hằng số.',
+    ex:'Ví dụ 4.3.1 — khởi tạo tệp thanh ghi',
+    code:"reg [15:0] rf [0:15];   // tệp thanh ghi\nreg [5:0]  w_addr;\n\nfor (w_addr = 0; w_addr < 16; w_addr = w_addr + 1)\n  rf[w_addr[3:0]] = 16'h0000;",
+    seq:[['w_addr=0','rf[0]=0'],['w_addr=1','rf[1]=0'],['…','…'],['w_addr=15','rf[15]=0'],['w_addr=16','thoát']],
+    syn2:'có', note:'w_addr khai báo 6 bit trong khi chỉ số chỉ cần 4 bit: nếu khai báo đúng 4 bit thì phép cộng tràn về 0 và vòng lặp không bao giờ kết thúc.'},
+   {k:'while',n:'≤ 16',syn:'while (dieu_kien)\n  lenh;',
+    use:'Dùng khi số lần lặp phụ thuộc dữ liệu',
+    desc:'Kiểm tra điều kiện trước mỗi lần lặp. Số lần lặp không biết trước nên chỉ tổng hợp được khi công cụ chứng minh được biên trên.',
+    ex:'Ví dụ 4.3.2 — tìm bit khác 0 đầu tiên',
+    code:"reg [15:0] flag;\nreg [4:0]  index;\nreg        found;\n\ninitial begin\n  index = 0;\n  found = 1'b0;\n  while ((index < 16) && (!found)) begin\n    if (flag[index]) found = 1'b1;\n    else index = index + 1;\n  end\n  if (!found) $display(\"khong tim thay bit khac 0\");\n  else $display(\"bit khac 0 dau tien o vi tri %d\", index);\nend",
+    seq:[['index=0','flag[0]=0'],['index=1','flag[1]=0'],['index=2','flag[2]=1'],['found=1','thoát']],
+    syn2:'hạn chế', note:'Điều kiện phải bảo đảm kết thúc. Vòng while không có biên trên trong mã thiết kế sẽ làm bộ mô phỏng treo ở đúng một thời điểm mô phỏng, vì vòng lặp không chứa lệnh trễ nào.'},
+   {k:'repeat',n:4095,syn:'repeat (so_lan)\n  lenh;',
+    use:'Dùng khi cần chờ một số chu kỳ xác định',
+    desc:'Lặp đúng số lần cho trước. Số lần có thể là biến, nhưng chỉ được tính một lần tại thời điểm bắt đầu vòng lặp, thay đổi biến sau đó không ảnh hưởng.',
+    ex:'Ví dụ 4.3.3 — đưa DAC tới sát điểm tràn',
+    code:"initial begin\n  inc_DAC = 1'b1;\n  repeat (4095) @(posedge clk);   // đưa DAC tới sát điểm tràn\n  inc_DAC = 1'b0;\n  inc_smpl = 1'b1;\n  repeat (7) @(posedge clk);      // đưa bộ đếm mẫu lên 7\n  inc_smpl = 1'b0;\nend",
+    seq:[['inc_DAC=1','chờ 4095 sườn'],['inc_DAC=0','—'],['inc_smpl=1','chờ 7 sườn'],['inc_smpl=0','xong']],
+    syn2:'có', note:'Cách viết gọn nhất để bỏ qua một số chu kỳ trong testbench, thay cho việc tính tay tổng thời gian trễ.'},
+   {k:'forever',n:'∞',syn:'forever\n  lenh;',
+    use:'Dùng để sinh tín hiệu tuần hoàn',
+    desc:'Lặp vô hạn. Bắt buộc phải chứa một lệnh trễ hoặc một lệnh chờ sự kiện, nếu không bộ mô phỏng sẽ treo tại chỗ.',
+    ex:'Ví dụ 4.3.4 — sinh xung nhịp',
+    code:"initial begin\n  clk = 0;\n  forever #10 clk = ~clk;\nend",
+    seq:[['t=0','clk=0'],['t=10','clk=1'],['t=20','clk=0'],['t=30','clk=1'],['…','…']],
+    syn2:'không', note:'Vòng lặp chỉ kết thúc khi gặp $finish hoặc khi khối chứa nó bị disable. Đây là lý do mọi testbench phải có một cơ chế dừng rõ ràng.'}
+  ];
+  let sel=0;
+  function draw(){
+    const l=L[sel];
+    $('#lpSyn').innerHTML=vl(l.syn);
+    $('#lpUse').textContent=l.use;
+    $('#lpDesc').textContent=l.desc;
+    $('#lpN').textContent=l.n;
+    $('#lpSyn2').textContent=l.syn2;
+    $('#lpSyn2').style.color = l.syn2==='có'?'var(--green)': l.syn2==='không'?'var(--red)':'var(--amber)';
+    $('#lpExName').textContent=l.ex;
+    $('#lpCode').innerHTML=vl(l.code);
+    $('#lpNoteT').textContent=l.note;
+    const W=560,H=132, n=l.seq.length, dx=(W-40)/n;
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    l.seq.forEach((s,i)=>{
+      const x=20+i*dx;
+      h+=S('rect',{x:x+5,y:26,width:dx-14,height:56,rx:7,fill:'var(--acc-soft)',
+        stroke:'var(--acc)','stroke-width':1.6});
+      h+=S('text',{x:x+dx/2-2,y:48,'font-size':11,'text-anchor':'middle','font-weight':700,
+        fill:'var(--ink)'},s[0]);
+      h+=S('text',{x:x+dx/2-2,y:66,'font-size':10,'text-anchor':'middle',fill:'var(--acc)'},s[1]);
+      if(i<n-1){
+        h+=S('path',{d:`M${x+dx-9} 54 H${x+dx+1}`,fill:'none',stroke:'var(--ink2)','stroke-width':1.8});
+        h+=arw(x+dx+1,54,'r','--ink2',6,3);
+      }
+    });
+    h+=S('text',{x:W/2,y:16,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},'lần lặp thứ nhất, thứ hai, …');
+    h+=S('text',{x:W/2,y:104,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},
+      'số lần lặp: '+l.n);
+    $('#lpSvg').innerHTML=h;
+  }
+  (function build(){
+    const p=$('#lpPick');
+    L.forEach((l,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===0?' on':'');
+      b.textContent=l.k; b.style.cssText='font-family:var(--mono);font-weight:700;font-size:12.5px;padding:6px 12px';
+      b.onclick=()=>{ sel=i; $$('#lpPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 25 · FORK JOIN ═══════════ */
+(function forkjoin(){
+  const ST=[{n:'a = 1;',d:0},{n:'#5  b = 1;',d:5},{n:'#3  c = 1;',d:3},{n:'#10 d = 1;',d:10}];
+  let par=false;
+  function draw(){
+    const kw=par?'fork':'begin', kw2=par?'join':'end';
+    $('#fjCode').innerHTML=vl('initial '+kw+'\n  '+ST.map(s=>s.n).join('\n  ')+'\n'+kw2+';');
+    let acc=0; const T=ST.map(s=>{ if(par) return s.d; acc+=s.d; return acc; });
+    const tot=par? Math.max.apply(null,T) : T[T.length-1];
+    $('#fjTot').textContent=tot;
+    $('#fjRows').innerHTML=ST.map((s,i)=>
+      `<tr><td style="text-align:left">${esc(s.n)}</td><td style="font-weight:700;color:var(--acc)">${T[i]}</td></tr>`).join('');
+    const W=560,H=176,L=104,R=34,tEnd=20, x=t=>L+t/tEnd*(W-L-R);
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    for(let t=0;t<=tEnd;t+=2){
+      h+=S('line',{x1:x(t),y1:18,x2:x(t),y2:132,stroke:'var(--line)','stroke-width':.8,'stroke-dasharray':'2 3'});
+      h+=S('text',{x:x(t),y:148,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},t);
+    }
+    h+=S('text',{x:(L+W-R)/2,y:166,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},'thời gian mô phỏng');
+    ST.forEach((s,i)=>{
+      const y=30+i*26, c=CO[i%CO.length];
+      h+=S('text',{x:96,y:y+4,'font-size':10.5,'text-anchor':'end','font-family':'var(--mono)',
+        fill:`var(${c})`,'font-weight':700},s.n.replace(/\s+/g,' '));
+      const t0=par?0:(i?T[i-1]:0), x0=x(t0);
+      if(T[i]>t0){
+        h+=S('path',{d:`M${x0} ${y} H${x(T[i])-8}`,fill:'none',stroke:`var(${c})`,'stroke-width':2.6});
+        h+=arw(x(T[i]),y,'r',c,8,3.8);
+      }
+      h+=S('circle',{cx:x0,cy:y,r:3.4,fill:`var(${c})`});
+      h+=S('text',{x:x(T[i])+11,y:y+4,'font-size':10,fill:`var(${c})`,'font-weight':700},'t='+T[i]);
+    });
+    h+=S('line',{x1:x(tot),y1:18,x2:x(tot),y2:132,stroke:'var(--red)','stroke-width':1.8,'stroke-dasharray':'4 3'});
+    h+=S('text',{x:x(tot),y:14,'font-size':10,'text-anchor':'middle',fill:'var(--red)','font-weight':700},
+      'khối kết thúc t='+tot);
+    $('#fjSvg').innerHTML=h;
+  }
+  (function build(){
+    const p=$('#fjPick');
+    ['begin / end (tuần tự)','fork / join (song song)'].forEach((k,i)=>{
+      const b=document.createElement('button'); b.className=(i===0?'on':'');
+      b.textContent=k;
+      b.onclick=()=>{ par=(i===1); $$('#fjPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 29 · CÁCH GÓI BIT TRONG TỆP ═══════════ */
+(function bitmap(){
+  const F=[{n:'a',b:'[15:0]',w:4,c:'--acc'},{n:'b',b:'[31:16]',w:4,c:'--acc'},
+           {n:'ci',b:'[35:32]',w:1,c:'--violet'},{n:'s',b:'[51:36]',w:4,c:'--green'},
+           {n:'co',b:'[55:52]',w:1,c:'--green'}];
+  function draw(){
+    const W=470,H=120, tot=F.reduce((a,f)=>a+f.w,0), L=16, dx=(W-2*L)/tot;
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    h+=S('text',{x:W/2,y:16,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},
+      'một dòng tệp = 14 chữ số hexa');
+    let x=L;
+    F.forEach(f=>{
+      const w=f.w*dx;
+      h+=S('rect',{x:x,y:26,width:w,height:38,rx:5,fill:`var(${f.c}-soft)`,stroke:`var(${f.c})`,'stroke-width':1.8});
+      h+=S('text',{x:x+w/2,y:44,'font-size':11.5,'text-anchor':'middle','font-weight':750,fill:'var(--ink)'},f.n);
+      h+=S('text',{x:x+w/2,y:58,'font-size':9,'text-anchor':'middle',fill:`var(${f.c})`},f.b);
+      h+=S('text',{x:x+w/2,y:78,'font-size':9,'text-anchor':'middle',fill:'var(--muted)'},f.w+' chữ số');
+      x+=w;
+    });
+    h+=S('path',{d:`M${L} 90 H${L+8*dx}`,fill:'none',stroke:'var(--acc)','stroke-width':2});
+    h+=arw(L,90,'l','--acc',7,3.4); h+=arw(L+8*dx,90,'r','--acc',7,3.4);
+    h+=S('text',{x:L+4*dx,y:104,'font-size':9.5,'text-anchor':'middle',fill:'var(--acc)','font-weight':700},
+      'mẫu đầu vào — stim[32:0]');
+    h+=S('path',{d:`M${L+9*dx} 90 H${W-L}`,fill:'none',stroke:'var(--green)','stroke-width':2});
+    h+=arw(L+9*dx,90,'l','--green',7,3.4); h+=arw(W-L,90,'r','--green',7,3.4);
+    h+=S('text',{x:(L+9*dx+W-L)/2,y:104,'font-size':9.5,'text-anchor':'middle',fill:'var(--green)','font-weight':700},
+      'đầu ra chuẩn');
+    $('#bitSvg').innerHTML=h;
+  }
+  draw(); window.addEventListener('theme',draw);
+})();
+
+/* ═══════════ SLIDE 30 · FORCE VÀ RELEASE ═══════════ */
+(function forcerel(){
+  const gray=s=>s^(s>>1);
+  const M=[{k:'Không dùng force',f:false,
+    note:'Bộ đếm chạy tự nhiên từ 0. Muốn tới trạng thái 1111 phải chờ 15 chu kỳ; với bộ đếm 32 bit thì con số đó là hơn bốn tỉ chu kỳ — không mô phỏng nổi.'},
+   {k:'Dùng force/release',f:true,
+    note:'Mỗi 20 ns, force đặt state tới một giá trị rồi release trả quyền cho mạch. Nhờ đó kiểm tra được cả 16 trạng thái trong 320 ns. Đổi lại, testbench không còn kiểm tra được rằng mạch có tự tới được các trạng thái đó hay không.'}];
+  let sel=1;
+  function draw(){
+    const m=M[sel];
+    $('#frName').textContent = m.f? 'Diễn biến khi dùng force/release' : 'Diễn biến khi để mạch chạy tự nhiên';
+    $('#frNoteT').textContent=m.note;
+    const W=560,H=176,L=54,R=16,N=16, dx=(W-L-R)/N;
+    let h=S('rect',{x:0,y:0,width:W,height:H,fill:'var(--surface)'});
+    for(let i=0;i<=N;i++){
+      h+=S('line',{x1:L+i*dx,y1:20,x2:L+i*dx,y2:132,stroke:'var(--line)','stroke-width':.8,'stroke-dasharray':'2 3'});
+      if(i<N) h+=S('text',{x:L+i*dx+dx/2,y:148,'font-size':8.5,'text-anchor':'middle',fill:'var(--muted)'},
+        m.f? (100+i*20) : (i*10));
+    }
+    h+=S('text',{x:(L+W-R)/2,y:166,'font-size':10,'text-anchor':'middle',fill:'var(--muted)'},'t (ns)');
+    const bus=(name,y,col,vals)=>{
+      h+=S('text',{x:8,y:y+16,'font-size':11,'font-weight':700,fill:`var(${col})`},name);
+      vals.forEach((v,i)=>{
+        const a=L+i*dx, b=a+dx, sl=3;
+        h+=S('path',{d:`M${a+sl} ${y} L${b-sl} ${y} L${b} ${y+12} L${b-sl} ${y+24} L${a+sl} ${y+24} L${a} ${y+12} Z`,
+          fill:`var(${col}-soft)`,stroke:`var(${col})`,'stroke-width':1.3});
+        h+=S('text',{x:(a+b)/2,y:y+16,'font-size':8,'text-anchor':'middle','font-weight':700,
+          fill:`var(${col})`},v);
+      });
+    };
+    const st=[], cn=[];
+    for(let i=0;i<N;i++){
+      const s = m.f? i : (i%16);
+      st.push(s.toString(2).padStart(4,'0'));
+      cn.push(gray(s).toString(2).padStart(4,'0'));
+    }
+    bus('state',28,'--acc',st);
+    bus('cnt',  76,'--violet',cn);
+    if(m.f){
+      for(let i=0;i<N;i++){
+        h+=S('rect',{x:L+i*dx+1,y:22,width:dx*0.5,height:4,rx:2,fill:'var(--red)'});
+      }
+      h+=S('text',{x:(L+W-R)/2,y:16,'font-size':9.5,'text-anchor':'middle',fill:'var(--red)','font-weight':700},
+        'vạch đỏ: khoảng thời gian tín hiệu bị force');
+    } else {
+      h+=S('text',{x:(L+W-R)/2,y:16,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},
+        'mạch tự đếm, mỗi chu kỳ 10 ns');
+    }
+    h+=S('text',{x:(L+W-R)/2,y:124,'font-size':9.5,'text-anchor':'middle',fill:'var(--muted)'},
+      'cnt = state ^ (state >> 1) — mã Gray, mỗi bước chỉ đổi đúng một bit');
+    $('#frSvg').innerHTML=h;
+  }
+  (function build(){
+    const p=$('#frPick');
+    M.forEach((m,i)=>{
+      const b=document.createElement('button'); b.className='btn'+(i===sel?' on':'');
+      b.textContent=m.k; b.style.cssText='font-size:12px;padding:5px 10px';
+      b.onclick=()=>{ sel=i; $$('#frPick button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); draw(); };
+      p.appendChild(b);
+    });
+  })();
+  draw(); window.addEventListener('theme',draw);
+})();
+/* ════════════════════ KHỞI ĐỘNG ════════════════════ */
+(function boot(){
+  const n=parseInt(location.hash.replace('#',''),10);
+  go(isNaN(n)?0:n-1,false);
+  setTimeout(()=>{fit();autofit(slides[cur]);},60);
+})();
+</script>
+</body>
+</html>

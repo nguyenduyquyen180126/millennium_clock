@@ -32,7 +32,7 @@ module tb_millennium_clock;
         .led_ss_yyyy(led_ss_yyyy)
     );
 
-    // 1 kHz clock generator (period = 1000 us)
+    // 1 kHz clock generator (period = 1000 us = 1 ms)
     initial begin
         clk = 0;
         forever #500 clk = ~clk;
@@ -51,7 +51,7 @@ module tb_millennium_clock;
             7'b1111000: seg2number = 4'h7;
             7'b0000000: seg2number = 4'h8;
             7'b0010000: seg2number = 4'h9;
-            default:    seg2number = 4'hB; // Blank / Unknown
+            default:    seg2number = 4'hB; // Blank / Unknown (displays as 'b')
         endcase
     endfunction
 
@@ -86,24 +86,6 @@ module tb_millennium_clock;
         end
     endtask
 
-    // Task to check blinking behaviour
-    task check_blinking(input [1:0] target);
-        begin
-            $display("[%0t us] Checking blinking for adj_target = %b...", $time, target);
-            // Wait until clk_2Hz is 1 (blinking active phase)
-            wait(dut.clk_2Hz == 1'b1);
-            #100;
-            $display("[%0t us] --- Blink phase (LED Blanking) ---", $time);
-            display_outputs();
-            
-            // Wait until clk_2Hz is 0 (blinking inactive phase)
-            wait(dut.clk_2Hz == 1'b0);
-            #100;
-            $display("[%0t us] --- Normal phase (LED Showing Value) ---", $time);
-            display_outputs();
-        end
-    endtask
-
     // Task to force internal counter values for testing calendar edge cases
     task force_time_date(
         input [5:0] sec,
@@ -122,7 +104,8 @@ module tb_millennium_clock;
             force dut.u_clock_block.u_day_counter.value = day;
             force dut.u_clock_block.u_month_counter.value = month;
             force dut.u_clock_block.u_year_counter.value = year;
-            // Also force y_mod values for correct leap year logic calculations
+            
+            // Force year division results for correct leap year calculations
             force dut.u_clock_block.u_year_counter.y_mod4 = year % 4;
             force dut.u_clock_block.u_year_counter.y_mod100 = year % 100;
             force dut.u_clock_block.u_year_counter.y_mod400 = year % 400;
@@ -143,216 +126,225 @@ module tb_millennium_clock;
     endtask
 
     initial begin
-        $display("=================================================");
-        $display("Starting Simulation for millennium_clock...");
-        $display("=================================================");
+        $display("======================================================================");
+        $display("Starting Millennium Clock Simulation (Sequential Testcases 1 to 24)");
+        $display("======================================================================");
 
-        // --- TEST CASE 1: Reset luc dau ---
-        $display("\n--- Test Case 1: Reset luc dau ---");
-        rst_n = 1'b1;
+        // --- STT 1: Reset Giờ:Phút:Giây ---
+        $display("\n--- [STT 1] Reset Gio:Phut:Giay ---");
+        rst_n = 1'b0;
         up_btn = 1'b0;
         down_btn = 1'b0;
         adj_target = 2'b00;
         adj_en = 1'b0;
-        mode = 1'b0;
-        
-        #1000;
-        rst_n = 1'b0;
-        #5000; // hold reset for 5ms
-        rst_n = 1'b1;
-        $display("[%0t us] Reset released.", $time);
-        #1000;
-        display_outputs();
-
-        // --- TEST CASE 2: Che do time ---
-        $display("\n--- Test Case 2: Che do Time ---");
         mode = 1'b0; // Time Mode
-        #2000;
-        display_outputs();
-
-        // --- TEST CASE 3: Chay 1 phut ---
-        $display("\n--- Test Case 3: Chay 1 phut ---");
-        repeat (60) begin
-            #1000000; // 10s
-            display_outputs();
-        end
-
-        // --- TEST CASE 4: Dieu chinh tang giam giay, gio, phut & kiem tra nhay LED ---
-        $display("\n--- Test Case 4: Dieu chinh giay, phut, gio & Kiem tra nhay LED ---");
-        
-        // 4a. Giây (adj_target = 2'b01)
-        $display("\n[Giay - Target 01]");
-        adj_target = 2'b01;
-        adj_en = 1'b1;
+        #5000; // Hold reset for 5ms
+        rst_n = 1'b1;
         #1000;
-        check_blinking(2'b01);
-        press_up_btn();
-        display_outputs();
-        press_down_btn();
-        display_outputs();
-        adj_en = 1'b0;
-        #2000;
+        display_outputs(); // Expected: 00:00:00 (HEX3:2 blanked, shown as 'b')
 
-        // 4b. Phút (adj_target = 2'b10)
-        $display("\n[Phut - Target 10]");
-        adj_target = 2'b10;
-        adj_en = 1'b1;
-        #1000;
-        check_blinking(2'b10);
-        press_up_btn();
-        display_outputs();
-        press_down_btn();
-        display_outputs();
-        adj_en = 1'b0;
-        #2000;
-
-        // 4c. Giờ (adj_target = 2'b11)
-        $display("\n[Gio - Target 11]");
-        adj_target = 2'b11;
-        adj_en = 1'b1;
-        #1000;
-        check_blinking(2'b11);
-        press_up_btn();
-        display_outputs();
-        press_down_btn();
-        display_outputs();
-        adj_en = 1'b0;
-        #2000;
-
-        // --- TEST CASE 5: Che do Date ---
-        $display("\n--- Test Case 5: Che do Date ---");
+        // --- STT 2: Reset Ngày:Tháng:Năm ---
+        $display("\n--- [STT 2] Reset Ngay:Thang:Nam ---");
         mode = 1'b1; // Date Mode
-        #2000;
-        display_outputs();
+        #1000;
+        display_outputs(); // Expected: 01:01:2024
+        mode = 1'b0; // Switch back to Time Mode
 
-        // --- TEST CASE 6: Dieu chinh ngay, thang, nam ---
-        $display("\n--- Test Case 6: Dieu chinh ngay, thang, nam ---");
+        // --- STT 3: Tăng Giây thủ công ---
+        $display("\n--- [STT 3] Tang Giay thu cong (59 -> 00) ---");
+        force_time_date(6'd59, 6'd0, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b01; // Second
         adj_en = 1'b1;
-
-        // 6a. Ngày (adj_target = 2'b11)
-        $display("\n[Ngay - Target 11]");
-        adj_target = 2'b11;
         #1000;
         press_up_btn();
-        display_outputs();
-        press_down_btn();
-        display_outputs();
-
-        // 6b. Thang (adj_target = 2'b10)
-        $display("\n[Thang - Target 10]");
-        adj_target = 2'b10;
-        #1000;
-        press_up_btn();
-        display_outputs();
-        press_down_btn();
-        display_outputs();
-
-        // 6c. Nam (adj_target = 2'b01)
-        $display("\n[Nam - Target 01]");
-        adj_target = 2'b01;
-        #1000;
-        press_up_btn();
-        display_outputs();
-        press_down_btn();
-        display_outputs();
-
+        display_outputs(); // Expected: xx:xx:00
         adj_en = 1'b0;
-        #2000;
 
-        // --- TEST CASE 7: Leap Year Rollover ---
-        $display("\n--- Test Case 7: Leap Year Rollover ---");
-        
-        // 7a. Normal Leap Year (2024) -> Should have Feb 29
-        $display("\n[7a. Normal Leap Year: Feb 2024]");
+        // --- STT 4: Giảm Giây thủ công ---
+        $display("\n--- [STT 4] Giam Giay thu cong (00 -> 59) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b01; // Second
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: xx:xx:59
+        adj_en = 1'b0;
+
+        // --- STT 5: Tăng Phút thủ công ---
+        $display("\n--- [STT 5] Tang Phut thu cong (59 -> 00) ---");
+        force_time_date(6'd0, 6'd59, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b10; // Minute
+        adj_en = 1'b1;
+        #1000;
+        press_up_btn();
+        display_outputs(); // Expected: xx:00:xx
+        adj_en = 1'b0;
+
+        // --- STT 6: Giảm Phút thủ công ---
+        $display("\n--- [STT 6] Giam Phut thu cong (00 -> 59) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b10; // Minute
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: xx:59:xx
+        adj_en = 1'b0;
+
+        // --- STT 7: Tăng Giờ thủ công ---
+        $display("\n--- [STT 7] Tang Gio thu cong (23 -> 00) ---");
+        force_time_date(6'd0, 6'd0, 5'd23, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b11; // Hour
+        adj_en = 1'b1;
+        #1000;
+        press_up_btn();
+        display_outputs(); // Expected: 00:xx:xx
+        adj_en = 1'b0;
+
+        // --- STT 8: Giảm Giờ thủ công ---
+        $display("\n--- [STT 8] Giam Gio thu cong (00 -> 23) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b11; // Hour
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: 23:xx:xx
+        adj_en = 1'b0;
+
+        // --- STT 9: Tăng Ngày thủ công ---
+        $display("\n--- [STT 9] Tang Ngay thu cong (31 -> 01) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd31, 4'd1, 14'd2024);
+        mode = 1'b1; // Date Mode
+        adj_target = 2'b11; // Day
+        adj_en = 1'b1;
+        #1000;
+        press_up_btn();
+        display_outputs(); // Expected: 01:xx:xxxx
+        adj_en = 1'b0;
+
+        // --- STT 10: Giảm Ngày thủ công ---
+        $display("\n--- [STT 10] Giam Ngay thu cong (01 -> 31) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b11; // Day
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: 31:xx:xxxx
+        adj_en = 1'b0;
+
+        // --- STT 11: Tăng Tháng thủ công ---
+        $display("\n--- [STT 11] Tang Thang thu cong (12 -> 01) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd12, 14'd2024);
+        adj_target = 2'b10; // Month
+        adj_en = 1'b1;
+        #1000;
+        press_up_btn();
+        display_outputs(); // Expected: xx:01:xxxx
+        adj_en = 1'b0;
+
+        // --- STT 12: Giảm Tháng thủ công ---
+        $display("\n--- [STT 12] Giam Thang thu cong (01 -> 12) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd2024);
+        adj_target = 2'b10; // Month
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: xx:12:xxxx
+        adj_en = 1'b0;
+
+        // --- STT 13: Tăng Năm thủ công ---
+        $display("\n--- [STT 13] Tang Nam thu cong (9999 -> 0000) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd9999);
+        adj_target = 2'b01; // Year
+        adj_en = 1'b1;
+        #1000;
+        press_up_btn();
+        display_outputs(); // Expected: xx:xx:0000
+        adj_en = 1'b0;
+
+        // --- STT 14: Giảm Năm thủ công ---
+        $display("\n--- [STT 14] Giam Nam thu cong (0000 -> 9999) ---");
+        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd0);
+        adj_target = 2'b01; // Year
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: xx:xx:9999
+        adj_en = 1'b0;
+
+        // --- STT 15: Tự gọt ngày khi tăng tháng (Leap) ---
+        $display("\n--- [STT 15] Tu got ngay khi tang thang (Leap: 31/01/2024 -> 29/02/2024) ---");
+        force_time_date(6'd0, 6'd0, 5'd12, 5'd31, 4'd1, 14'd2024);
+        adj_target = 2'b10; // Month
+        adj_en = 1'b1;
+        #1000;
+        press_up_btn();
+        display_outputs(); // Expected: 29:02:2024
+        adj_en = 1'b0;
+
+        // --- STT 16: Tự gọt ngày khi giảm năm (Non-Leap) ---
+        $display("\n--- [STT 16] Tu got ngay khi giam nam (Non-Leap: 29/02/2024 -> 28/02/2023) ---");
+        force_time_date(6'd0, 6'd0, 5'd12, 5'd29, 4'd2, 14'd2024);
+        adj_target = 2'b01; // Year
+        adj_en = 1'b1;
+        #1000;
+        press_down_btn();
+        display_outputs(); // Expected: 28:02:2023
+        adj_en = 1'b0;
+
+        // --- STT 17: Kiểm tra năm nhuận 2024 ---
+        $display("\n--- [STT 17] Kiem tra nam nhuan 2024 (28/02/2024 23:59:59 -> 1s -> 29/02/2024) ---");
         force_time_date(6'd59, 6'd59, 5'd23, 5'd28, 4'd2, 14'd2024);
+        mode = 1'b1; // Date Mode
         #1000000; // Wait 1s
-        $display("After 1s (should be 29/02/2024):");
-        display_outputs();
-        
-        // Force to 29/02/2024 23:59:59 to test rollover to 01/03/2024
-        force_time_date(6'd59, 6'd59, 5'd23, 5'd29, 4'd2, 14'd2024);
-        #1000000; // Wait 1s
-        $display("After 2s (should be 01/03/2024):");
-        display_outputs();
-        
-        // 7b. Non-Leap Year (2100) -> Should NOT have Feb 29
-        $display("\n[7b. Non-Leap Year: Feb 2100]");
-        force_time_date(6'd59, 6'd59, 5'd23, 5'd28, 4'd2, 14'd2100);
-        #1000000; // Wait 1s
-        $display("After 1s (should be 01/03/2100):");
-        display_outputs();
+        display_outputs(); // Expected: 29:02:2024
 
-        // 7c. Century Leap Year (2000) -> Should have Feb 29
-        $display("\n[7c. Century Leap Year: Feb 2000]");
+        // --- STT 18: Kiểm tra năm nhuận thế kỷ 2000 ---
+        $display("\n--- [STT 18] Kiem tra nam nhuan the ky 2000 (28/02/2000 23:59:59 -> 1s -> 29/02/2000) ---");
         force_time_date(6'd59, 6'd59, 5'd23, 5'd28, 4'd2, 14'd2000);
         #1000000; // Wait 1s
-        $display("After 1s (should be 29/02/2000):");
-        display_outputs();
-        
-        // Force to 29/02/2000 23:59:59 to test rollover to 01/03/2000
-        force_time_date(6'd59, 6'd59, 5'd23, 5'd29, 4'd2, 14'd2000);
-        #1000000; // Wait 1s
-        $display("After 2s (should be 01/03/2000):");
-        display_outputs();
+        display_outputs(); // Expected: 29:02:2000
 
-        // --- TEST CASE 8: Month End Rollover ---
-        $display("\n--- Test Case 8: Month End Rollover (April 30 -> May 1) ---");
-        force_time_date(6'd59, 6'd59, 5'd23, 5'd30, 4'd4, 14'd2024);
+        // --- STT 19: Kiểm tra năm không nhuận thế kỷ 2100 ---
+        $display("\n--- [STT 19] Kiem tra nam khong nhuan the ky 2100 (28/02/2100 23:59:59 -> 1s -> 01/03/2100) ---");
+        force_time_date(6'd59, 6'd59, 5'd23, 5'd28, 4'd2, 14'd2100);
         #1000000; // Wait 1s
-        display_outputs();
+        display_outputs(); // Expected: 01:03:2100
 
-        // --- TEST CASE 9: Year End & Millennium Rollover ---
-        $display("\n--- Test Case 9: Year End & Millennium Rollover ---");
-        
-        // 9a. Normal Year End (31/12/2024 -> 01/01/2025)
-        $display("\n[9a. Normal Year End]");
+        // --- STT 20: Tự động chuyển giao phút ---
+        $display("\n--- [STT 20] Tu dong chuyen giao phut ---");
+        force_time_date(6'd59, 6'd0, 5'd12, 5'd1, 4'd1, 14'd2024);
+        mode = 1'b0; // Time Mode
+        #1000000; // Wait 1s simulated time (1000 cycles)
+        display_outputs(); // Expected: xx:01:00
+
+        // --- STT 21: Tự động chuyển giao giờ ---
+        $display("\n--- [STT 21] Tu dong chuyen giao gio ---");
+        force_time_date(6'd59, 6'd59, 5'd0, 5'd1, 4'd1, 14'd2024);
+        #1000000;
+        display_outputs(); // Expected: 01:00:00
+
+        // --- STT 22: Tự động chuyển giao ngày (Năm nhuận) ---
+        $display("\n--- [STT 22] Tu dong chuyen giao ngay (Feb Leap Year) ---");
+        force_time_date(6'd59, 6'd59, 5'd23, 5'd29, 4'd02, 14'd2024);
+        mode = 1'b1; // Date Mode
+        #1000000;
+        display_outputs(); // Expected: 01:03:2024
+
+        // --- STT 23: Tự động chuyển giao năm ---
+        $display("\n--- [STT 23] Tu dong chuyen giao nam ---");
         force_time_date(6'd59, 6'd59, 5'd23, 5'd31, 4'd12, 14'd2024);
-        #1000000; // Wait 1s
-        display_outputs();
+        #1000000;
+        display_outputs(); // Expected: 01:01:2025
 
-        // 9b. Millennium End (31/12/9999 -> 01/01/0000)
-        $display("\n[9b. Millennium End]");
+        // --- STT 24: Tự động chuyển giao thiên niên kỷ ---
+        $display("\n--- [STT 24] Tu dong chuyen giao thien nien ky ---");
         force_time_date(6'd59, 6'd59, 5'd23, 5'd31, 4'd12, 14'd9999);
-        #1000000; // Wait 1s
-        display_outputs();
+        #1000000;
+        display_outputs(); // Expected: 01:01:0000
 
-        // --- TEST CASE 10: Manual Year Decrement Underflow (0000 -> 9999) ---
-        $display("\n--- Test Case 10: Manual Year Decrement Underflow (0000 -> 9999) ---");
-        force_time_date(6'd0, 6'd0, 5'd0, 5'd1, 4'd1, 14'd0);
-        mode = 1'b1;       // Date mode
-        adj_en = 1'b1;     // Enable adjust
-        adj_target = 2'b01; // Target = Year
-        #1000;
-        press_down_btn();  // Decrement Year
-        display_outputs();
-        adj_en = 1'b0;
-        mode = 1'b0;
-        #2000;
-
-        // --- TEST CASE 11: Day Clipping when Month Changes (Co ngắn ngày) ---
-        $display("\n--- Test Case 11: Day Clipping (31/01 -> month change to Feb -> 29/02/2024) ---");
-        // We set to 31/01/2024 (Leap year)
-        force_time_date(6'd0, 6'd0, 5'd12, 5'd31, 4'd1, 14'd2024);
-        mode = 1'b1;       // Date mode
-        adj_en = 1'b1;     // Enable adjust
-        adj_target = 2'b10; // Target = Month
-        #1000;
-        press_up_btn();    // Month 1 -> 2
-        display_outputs(); // Should show 29/02/2024
-        
-        $display("\n[Change year to 2023 (Non-Leap) -> Day clips from 29 to 28]");
-        adj_target = 2'b01; // Target = Year
-        #1000;
-        press_down_btn();  // Year 2024 -> 2023
-        display_outputs(); // Should clip to 28/02/2023
-        
-        adj_en = 1'b0;
-        mode = 1'b0;
-        #2000;
-
-        $display("=================================================");
-        $display("Simulation Finished Successfully!");
-        $display("=================================================");
+        $display("======================================================================");
+        $display("Millennium Clock Simulation Finished Successfully!");
+        $display("======================================================================");
         $finish;
     end
 

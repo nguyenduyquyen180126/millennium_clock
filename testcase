@@ -1,0 +1,66 @@
+# TÀI LIỆU KỊCH BẢN KIỂM THỬ (TESTCASE) - MILLENNIUM CLOCK
+
+Tài liệu này bao gồm phân tích các lỗi bất hợp lý trong bảng testcase cũ và cung cấp bảng kịch bản kiểm thử mới đã được chuẩn hóa.
+
+---
+
+## 1. PHÂN TÍCH CÁC ĐIỂM BẤT HỢP LÝ TRONG BẢNG GỐC
+
+Trong bảng kịch bản cũ, có một số điểm chưa hợp lý về mặt logic kỹ thuật và hiển thị như sau:
+
+1. **Dòng 3 (Reset ngày tháng năm)**:
+   - *Gốc:* Giá trị mong muốn hiển thị khi reset date là `01:34:44`.
+   - *Bất hợp lý:* Reset mặc định của ngày là `01`, tháng là `01`, năm là `2024`. Ở chế độ Date hiển thị 8 chữ số (`DD:MM:YYYY`), kết quả đúng phải là `01:01:2024`. Giá trị `01:34:44` chỉ có 6 chữ số và sai lệch thông số reset.
+   - *Khắc phục:* Sửa giá trị mong muốn thành `01:01:2024`.
+
+2. **Dòng 9 (Giảm giờ)**:
+   - *Gốc:* Giá trị mong muốn khi giảm giờ từ `00` xuống là `59:xx:xx`.
+   - *Bất hợp lý:* Giờ hiển thị trong hệ 24 giờ (`00` đến `23`). Khi giảm giờ từ `00` xuống, giá trị phải cuốn về `23`, không thể là `59` (59 là của phút/giây).
+   - *Khắc phục:* Sửa giá trị mong muốn thành `23:xx:xx`.
+
+3. **Dòng 10 & 11 (Tăng/Giảm tháng)**:
+   - *Gốc:* Giá trị mong muốn hiển thị ở cột đầu tiên: `01:xx:xx` và `12:xx:xx`.
+   - *Bất hợp lý:* Ở chế độ hiển thị Ngày/Tháng/Năm (`mode = 1`), định dạng led là `DD:MM:YYYY`. Tháng nằm ở giữa (`MM`), do đó giá trị mong muốn phải ở giữa là `xx:01:xxxx` và `xx:12:xxxx`.
+   - *Khắc phục:* Sửa vị trí hiển thị mong muốn thành `xx:01:xxxx` và `xx:12:xxxx`.
+
+4. **Dòng 12 (Tự gọt ngày khi đổi tháng)**:
+   - *Gốc:* Khi tăng tháng từ ngày `31:01:2024` sang tháng 2, giá trị mong muốn là `29:35:44`.
+   - *Bất hợp lý:* Tháng 2/2024 là năm nhuận nên ngày tự gọt về tối đa của tháng 2 là `29`. Giá trị hiển thị đúng phải là `29:02:2024`. Giá trị `29:35:44` chứa tháng `35` không hợp lệ.
+   - *Khắc phục:* Sửa giá trị mong muốn thành `29:02:2024`.
+
+5. **Thiếu các kịch bản kiểm thử điều chỉnh Ngày/Năm thủ công**:
+   - *Bất hợp lý:* Chưa kiểm tra tăng/giảm Ngày thủ công (`adj_target = 11`, `mode = 1`) và Năm thủ công (`adj_target = 01`, `mode = 1`).
+   - *Khắc phục:* Bổ sung các kịch bản này để đảm bảo testbench phủ kín chức năng.
+
+---
+
+## 2. BẢNG KỊCH BẢN KIỂM THỬ ĐÃ CHUẨN HÓA (REVISED TESTCASES)
+
+Dưới đây là bảng testcase hoàn chỉnh và chính xác theo thiết kế phần cứng:
+
+| STT | Kịch bản test | Mục đích kiểm tra | Trạng thái ban đầu (Force Value) | Tín hiệu Input | Giá trị mong muốn hiển thị (Expected Output) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | Reset Giờ:Phút:Giây | Kiểm tra reset các bộ đếm thời gian | Không có | `rst_n = 0`, `mode = 0` | `00:00:00` (đèn LED YYYY tắt) |
+| **2** | Reset Ngày:Tháng:Năm | Kiểm tra reset bộ đếm ngày tháng năm | Không có | `rst_n = 0`, `mode = 1` | `01:01:2024` |
+| **3** | Tăng Giây thủ công | Kiểm tra tăng giây ở giá trị biên giới hạn | `second = 59` | `mode = 0`, `adj_en = 1`, `adj_target = 01`, `up = 1` | `xx:xx:00` (giây cuốn về 00) |
+| **4** | Giảm Giây thủ công | Kiểm tra giảm giây ở giá trị biên giới hạn | `second = 00` | `mode = 0`, `adj_en = 1`, `adj_target = 01`, `down = 1` | `xx:xx:59` (giây cuốn về 59) |
+| **5** | Tăng Phút thủ công | Kiểm tra tăng phút ở giá trị biên giới hạn | `minute = 59` | `mode = 0`, `adj_en = 1`, `adj_target = 10`, `up = 1` | `xx:00:xx` (phút cuốn về 00) |
+| **6** | Giảm Phút thủ công | Kiểm tra giảm phút ở giá trị biên giới hạn | `minute = 00` | `mode = 0`, `adj_en = 1`, `adj_target = 10`, `down = 1` | `xx:59:xx` (phút cuốn về 59) |
+| **7** | Tăng Giờ thủ công | Kiểm tra tăng giờ ở giá trị biên giới hạn | `hour = 23` | `mode = 0`, `adj_en = 1`, `adj_target = 11`, `up = 1` | `00:xx:xx` (giờ cuốn về 00) |
+| **8** | Giảm Giờ thủ công | Kiểm tra giảm giờ ở giá trị biên giới hạn | `hour = 00` | `mode = 0`, `adj_en = 1`, `adj_target = 11`, `down = 1` | `23:xx:xx` (giờ cuốn về 23) |
+| **9** | Tăng Ngày thủ công | Kiểm tra tăng ngày ở biên cuối tháng | `day = 31`, `month = 1`, `year = 2024` | `mode = 1`, `adj_en = 1`, `adj_target = 11`, `up = 1` | `01:xx:xxxx` (ngày cuốn về 01) |
+| **10** | Giảm Ngày thủ công | Kiểm tra giảm ngày ở biên đầu tháng | `day = 01`, `month = 1`, `year = 2024` | `mode = 1`, `adj_en = 1`, `adj_target = 11`, `down = 1` | `31:xx:xxxx` (ngày cuốn về 31) |
+| **11** | Tăng Tháng thủ công | Kiểm tra tăng tháng ở biên cuối năm | `month = 12`, `year = 2024` | `mode = 1`, `adj_en = 1`, `adj_target = 10`, `up = 1` | `xx:01:xxxx` (tháng cuốn về 01) |
+| **12** | Giảm Tháng thủ công | Kiểm tra giảm tháng ở biên đầu năm | `month = 01`, `year = 2024` | `mode = 1`, `adj_en = 1`, `adj_target = 10`, `down = 1` | `xx:12:xxxx` (tháng cuốn về 12) |
+| **13** | Tăng Năm thủ công | Kiểm tra tăng năm ở biên 9999 | `year = 9999` | `mode = 1`, `adj_en = 1`, `adj_target = 01`, `up = 1` | `xx:xx:0000` (năm cuốn về 0000) |
+| **14** | Giảm Năm thủ công | Kiểm tra giảm năm ở biên 0000 | `year = 0000` | `mode = 1`, `adj_en = 1`, `adj_target = 01`, `down = 1` | `xx:xx:9999` (năm cuốn về 9999) |
+| **15** | Tự gọt ngày khi tăng tháng (Leap) | Kiểm tra tự gọt ngày từ 31 xuống 29 của năm nhuận | `day = 31`, `month = 01`, `year = 2024` | `mode = 1`, `adj_en = 1`, `adj_target = 10`, `up = 1` | `29:02:2024` (tự gọt sang ngày 29 tháng 2) |
+| **16** | Tự gọt ngày khi giảm năm (Non-Leap) | Kiểm tra tự gọt ngày từ 29 xuống 28 khi năm chuyển từ nhuận sang không nhuận | `day = 29`, `month = 02`, `year = 2024` | `mode = 1`, `adj_en = 1`, `adj_target = 01`, `down = 1` | `28:02:2023` (năm 2023 không nhuận, ngày gọt về 28) |
+| **17** | Kiểm tra năm nhuận 2024 | Kiểm tra chuyển giao ngày từ 28/02 sang 29/02 của năm nhuận thường | `second = 59, minute = 59, hour = 23, day = 28, month = 02, year = 2024` | `mode = 1, adj_en = 0`, chờ `tick_1Hz` | `29:02:2024` (chuyển sang ngày 29 tháng 2) |
+| **18** | Kiểm tra năm nhuận thế kỷ 2000 | Kiểm tra chuyển giao ngày từ 28/02 sang 29/02 của năm nhuận thế kỷ | `second = 59, minute = 59, hour = 23, day = 28, month = 02, year = 2000` | `mode = 1, adj_en = 0`, chờ `tick_1Hz` | `29:02:2000` (chuyển sang ngày 29 tháng 2) |
+| **19** | Kiểm tra năm không nhuận thế kỷ 2100 | Kiểm tra chuyển giao ngày từ 28/02 sang thẳng 01/03 của năm không nhuận thế kỷ | `second = 59, minute = 59, hour = 23, day = 28, month = 02, year = 2100` | `mode = 1, adj_en = 0`, chờ `tick_1Hz` | `01:03:2100` (chuyển sang ngày 1 tháng 3) |
+| **20** | Tự động chuyển giao phút | Kiểm tra logic tràn từ giây sang phút | `second = 59`, `minute = 00` | `mode = 0`, `adj_en = 0`, chờ `tick_1Hz` | `xx:01:00` |
+| **21** | Tự động chuyển giao giờ | Kiểm tra logic tràn từ phút sang giờ | `second = 59`, `minute = 59`, `hour = 00` | `mode = 0`, `adj_en = 0`, chờ `tick_1Hz` | `01:00:00` |
+| **22** | Tự động chuyển giao ngày (Năm nhuận) | Kiểm tra chuyển giao cuối ngày 29/02 sang 01/03 | `second = 59`, `minute = 59`, `hour = 23`, `day = 29`, `month = 02`, `year = 2024` | `mode = 1`, `adj_en = 0`, chờ `tick_1Hz` | `01:03:2024` (tự reset thời gian về `00:00:00`) |
+| **23** | Tự động chuyển giao năm | Kiểm tra tràn từ cuối năm 2024 sang năm mới 2025 | `second = 59`, `minute = 59`, `hour = 23`, `day = 31`, `month = 12`, `year = 2024` | `mode = 1`, `adj_en = 0`, chờ `tick_1Hz` | `01:01:2025` (tự reset thời gian về `00:00:00`) |
+| **24** | Tự động chuyển giao thiên niên kỷ | Kiểm tra tràn năm từ 9999 về 0000 | `second = 59`, `minute = 59`, `hour = 23`, `day = 31`, `month = 12`, `year = 9999` | `mode = 1`, `adj_en = 0`, chờ `tick_1Hz` | `01:01:0000` (tự reset thời gian về `00:00:00`) |
