@@ -3,60 +3,48 @@
 module tb_bin2bcd_14bits;
     reg [13:0] bin;
     wire [15:0] bcd;
+    integer i;
+    integer errors = 0;
 
-    // Instantiate UUT
-    bin2bcd_14bits uut (
+    bin2bcd_14bits dut (
         .bin(bin),
         .bcd(bcd)
     );
-
-    integer i;
-    reg [15:0] temp_bcd;
     
-    // Function to calculate expected BCD behaviorally
     function [15:0] to_bcd(input [13:0] val);
-        integer temp;
         begin
-            temp = val;
-            to_bcd[3:0]   = temp % 10;
-            temp = temp / 10;
-            to_bcd[7:4]   = temp % 10;
-            temp = temp / 10;
-            to_bcd[11:8]  = temp % 10;
-            temp = temp / 10;
-            to_bcd[15:12] = temp % 10;
+            to_bcd[3:0]   = val % 10;
+            to_bcd[7:4]   = (val / 10) % 10;
+            to_bcd[11:8]  = (val / 100) % 10;
+            to_bcd[15:12] = (val / 1000) % 10;
         end
     endfunction
 
+    task check_bcd(input [13:0] in_val, input [15:0] actual_bcd, input [15:0] expected_bcd);
+        begin
+            if (actual_bcd !== expected_bcd) begin
+                $display("[FAIL] Mismatch at %0d: got BCD = %h, expected = %h", in_val, actual_bcd, expected_bcd);
+                errors = errors + 1;
+            end
+        end
+    endtask
+
     initial begin
         $display("Starting bin2bcd_14bits testbench...");
-        
-        // Test a few specific numbers
-        bin = 14'd0;
-        #10;
-        if (bcd !== 16'h0) $display("Error for 0: bcd = %h", bcd);
 
-        bin = 14'd25;
-        #10;
-        if (bcd !== 16'h0025) $display("Error for 25: bcd = %h", bcd);
-
-        bin = 14'd9999;
-        #10;
-        if (bcd !== 16'h9999) $display("Error for 9999: bcd = %h", bcd);
-
-
-        // Exhaustive test
         for (i = 0; i < 10000; i = i + 1) begin
             bin = i;
             #1;
-            temp_bcd = to_bcd(i);
-            if (bcd !== temp_bcd) begin
-                $display("Mismatch at %d: got %h, expected %h", i, bcd, temp_bcd);
-                $finish;
-            end
+            check_bcd(i, bcd, to_bcd(i));
         end
         
-        $display("All tests passed successfully!");
+        if (errors === 0) begin
+            $display("ALL TESTS PASSED");
+        end else begin
+            $display("FAIL %0d TESTS", errors);
+        end
+
         $finish;
     end
+
 endmodule

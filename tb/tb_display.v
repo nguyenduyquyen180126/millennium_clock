@@ -44,7 +44,7 @@ module tb_display;
             7'b1111000: seg2number = 4'h7;
             7'b0000000: seg2number = 4'h8;
             7'b0010000: seg2number = 4'h9;
-            7'b1111111: seg2number = 4'hB; // Blank
+            7'b1111111: seg2number = 4'hB; 
         endcase
     endfunction
 

@@ -7,10 +7,6 @@ module tb_button_auto_repeat();
     reg btn_clean;
     wire pulse_out;
 
-    // Instantiate DUT with custom parameters for fast simulation:
-    // CLK_FREQ = 1000 Hz, meaning 1 cycle = 1 ms.
-    // HOLD_DELAY_MS = 50 ms (50 clock cycles required to enter hold/repeat mode)
-    // REPEAT_RATE_MS = 10 ms (10 clock cycles between repeat pulses)
     button_auto_repeat #(
         .CLK_FREQ(1000),
         .HOLD_DELAY_MS(50),

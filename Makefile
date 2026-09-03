@@ -39,6 +39,12 @@ display:
 millennium_clock_cli:
 	vsim -c -do "do sim/millennium_clock.tcl; quit -f"
 
+seven_seg_decoder:
+	vsim -do sim/seven_seg_decoder.tcl
+
+seven_seg_decoder_cli:
+	vsim -c -do "do sim/seven_seg_decoder.tcl; quit -f"
+
 button_auto_repeat_cli:
 	vsim -c -do "do sim/button_auto_repeat.tcl; quit -f"
 
